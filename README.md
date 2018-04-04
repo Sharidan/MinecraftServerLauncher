@@ -12,7 +12,12 @@ Time will tell which other features may find their way into this tool.
 
 As videos become available I will update YouTube links here:
 
-[first video is uploading]
+Part 1: https://www.youtube.com/watch?v=X-Eqgm1ft30
+
+Part 2: https://www.youtube.com/watch?v=uuNak36tV-Y
+
+Part 3: https://www.youtube.com/watch?v=Yo4EVvoP_yo
+
 
 This project is not meant for contributions. Feel free to grab a copy of the code and change it any way you see fit.
 If you decide to use parts of or the entire project for commercial purposes, I ask that you at least credit me for my contribution.
