@@ -35,9 +35,13 @@
       this.numericUpDown1 = new System.Windows.Forms.NumericUpDown();
       this.btnSave = new System.Windows.Forms.Button();
       this.grpServerControl = new System.Windows.Forms.GroupBox();
-      this.btnStart = new System.Windows.Forms.Button();
       this.btnStop = new System.Windows.Forms.Button();
+      this.btnStart = new System.Windows.Forms.Button();
       this.btnServerInfo = new System.Windows.Forms.Button();
+      this.btnConnect = new System.Windows.Forms.Button();
+      this.btnDisconnect = new System.Windows.Forms.Button();
+      this.txtCommand = new System.Windows.Forms.TextBox();
+      this.btnExecute = new System.Windows.Forms.Button();
       ((System.ComponentModel.ISupportInitialize)(this.numericUpDown1)).BeginInit();
       this.grpServerControl.SuspendLayout();
       this.SuspendLayout();
@@ -103,7 +107,7 @@
       // 
       // btnSave
       // 
-      this.btnSave.Location = new System.Drawing.Point(28, 136);
+      this.btnSave.Location = new System.Drawing.Point(28, 105);
       this.btnSave.Name = "btnSave";
       this.btnSave.Size = new System.Drawing.Size(75, 23);
       this.btnSave.TabIndex = 5;
@@ -115,22 +119,12 @@
       // 
       this.grpServerControl.Controls.Add(this.btnStop);
       this.grpServerControl.Controls.Add(this.btnStart);
-      this.grpServerControl.Location = new System.Drawing.Point(28, 183);
+      this.grpServerControl.Location = new System.Drawing.Point(28, 134);
       this.grpServerControl.Name = "grpServerControl";
-      this.grpServerControl.Size = new System.Drawing.Size(547, 154);
+      this.grpServerControl.Size = new System.Drawing.Size(547, 84);
       this.grpServerControl.TabIndex = 6;
       this.grpServerControl.TabStop = false;
       this.grpServerControl.Text = "Server control";
-      // 
-      // btnStart
-      // 
-      this.btnStart.Location = new System.Drawing.Point(26, 37);
-      this.btnStart.Name = "btnStart";
-      this.btnStart.Size = new System.Drawing.Size(75, 23);
-      this.btnStart.TabIndex = 0;
-      this.btnStart.Text = "Start";
-      this.btnStart.UseVisualStyleBackColor = true;
-      this.btnStart.Click += new System.EventHandler(this.btnStart_Click);
       // 
       // btnStop
       // 
@@ -142,9 +136,19 @@
       this.btnStop.UseVisualStyleBackColor = true;
       this.btnStop.Click += new System.EventHandler(this.btnStop_Click);
       // 
+      // btnStart
+      // 
+      this.btnStart.Location = new System.Drawing.Point(26, 37);
+      this.btnStart.Name = "btnStart";
+      this.btnStart.Size = new System.Drawing.Size(75, 23);
+      this.btnStart.TabIndex = 0;
+      this.btnStart.Text = "Start";
+      this.btnStart.UseVisualStyleBackColor = true;
+      this.btnStart.Click += new System.EventHandler(this.btnStart_Click);
+      // 
       // btnServerInfo
       // 
-      this.btnServerInfo.Location = new System.Drawing.Point(148, 136);
+      this.btnServerInfo.Location = new System.Drawing.Point(148, 105);
       this.btnServerInfo.Name = "btnServerInfo";
       this.btnServerInfo.Size = new System.Drawing.Size(75, 23);
       this.btnServerInfo.TabIndex = 7;
@@ -152,11 +156,52 @@
       this.btnServerInfo.UseVisualStyleBackColor = true;
       this.btnServerInfo.Click += new System.EventHandler(this.btnServerInfo_Click);
       // 
+      // btnConnect
+      // 
+      this.btnConnect.Location = new System.Drawing.Point(28, 239);
+      this.btnConnect.Name = "btnConnect";
+      this.btnConnect.Size = new System.Drawing.Size(75, 23);
+      this.btnConnect.TabIndex = 8;
+      this.btnConnect.Text = "Connect";
+      this.btnConnect.UseVisualStyleBackColor = true;
+      this.btnConnect.Click += new System.EventHandler(this.btnConnect_Click);
+      // 
+      // btnDisconnect
+      // 
+      this.btnDisconnect.Location = new System.Drawing.Point(109, 239);
+      this.btnDisconnect.Name = "btnDisconnect";
+      this.btnDisconnect.Size = new System.Drawing.Size(75, 23);
+      this.btnDisconnect.TabIndex = 9;
+      this.btnDisconnect.Text = "Disconnect";
+      this.btnDisconnect.UseVisualStyleBackColor = true;
+      this.btnDisconnect.Click += new System.EventHandler(this.btnDisconnect_Click);
+      // 
+      // txtCommand
+      // 
+      this.txtCommand.Location = new System.Drawing.Point(28, 268);
+      this.txtCommand.Name = "txtCommand";
+      this.txtCommand.Size = new System.Drawing.Size(458, 20);
+      this.txtCommand.TabIndex = 10;
+      // 
+      // btnExecute
+      // 
+      this.btnExecute.Location = new System.Drawing.Point(500, 266);
+      this.btnExecute.Name = "btnExecute";
+      this.btnExecute.Size = new System.Drawing.Size(75, 23);
+      this.btnExecute.TabIndex = 11;
+      this.btnExecute.Text = "Execute";
+      this.btnExecute.UseVisualStyleBackColor = true;
+      this.btnExecute.Click += new System.EventHandler(this.btnExecute_Click);
+      // 
       // MainForm
       // 
       this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
       this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-      this.ClientSize = new System.Drawing.Size(607, 373);
+      this.ClientSize = new System.Drawing.Size(607, 317);
+      this.Controls.Add(this.btnExecute);
+      this.Controls.Add(this.txtCommand);
+      this.Controls.Add(this.btnDisconnect);
+      this.Controls.Add(this.btnConnect);
       this.Controls.Add(this.btnServerInfo);
       this.Controls.Add(this.grpServerControl);
       this.Controls.Add(this.btnSave);
@@ -188,6 +233,10 @@
     private System.Windows.Forms.Button btnStop;
     private System.Windows.Forms.Button btnStart;
     private System.Windows.Forms.Button btnServerInfo;
+    private System.Windows.Forms.Button btnConnect;
+    private System.Windows.Forms.Button btnDisconnect;
+    private System.Windows.Forms.TextBox txtCommand;
+    private System.Windows.Forms.Button btnExecute;
   }
 }
 

@@ -47,6 +47,7 @@
     <Compile Include="CSharpLibs\ConfigTools\INIFile.cs" />
     <Compile Include="CSharpLibs\Minecraft\ServerHost.cs" />
     <Compile Include="CSharpLibs\Minecraft\ServerProfileConfig.cs" />
+    <Compile Include="CSharpLibs\Networking\SourceRemoteConsole.cs" />
     <Compile Include="Forms\MainForm.cs">
       <SubType>Form</SubType>
     </Compile>

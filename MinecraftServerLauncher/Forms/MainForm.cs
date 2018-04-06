@@ -1,5 +1,6 @@
 ﻿using CSharpLibs.ConfigTools;
 using CSharpLibs.Minecraft;
+using CSharpLibs.Networking;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -12,16 +13,27 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 
+/* 
+ * Update: 6. April 2018
+ * So far this form is still one huge mess of test setups.
+ * As we progress further with this project, most of the
+ * current code in this form will be replaced.
+ * 
+ */
+
 namespace MinecraftServerLauncher
 {
   public partial class MainForm : Form
   {
+
 
     ServerProfileConfig config = new ServerProfileConfig();
 
     #region ===== Run Server Handling =====
 
     private ServerHost MinecraftServer = null;
+
+    private bool MinecraftServerRunning = false;
 
     private void MinecraftServer_ServerStarting(int serverHostID)
     {
@@ -64,6 +76,8 @@ namespace MinecraftServerLauncher
       System.Diagnostics.Debug.WriteLine("<<" + serverHostID.ToString() + ">> Minecraft server started!");
 
       btnStop.Enabled = true;
+
+      MinecraftServerRunning = true;
     }
 
     private void MinecraftServer_ServerShuttingDown(int serverHostID)
@@ -79,6 +93,8 @@ namespace MinecraftServerLauncher
       System.Diagnostics.Debug.WriteLine("<<" + serverHostID.ToString() + ">> Minecraft server IS SHUTTING DOWN!!!");
 
       btnStop.Enabled = false;
+
+      MinecraftServerRunning = false;
     }
 
     private void MinecraftServer_ServerStopped(int serverHostID)
@@ -94,6 +110,8 @@ namespace MinecraftServerLauncher
       System.Diagnostics.Debug.WriteLine("<<" + serverHostID.ToString() + ">> Minecraft server stopped.");
 
       btnStart.Enabled = true;
+
+      MinecraftServerRunning = false;
     }
 
     private void InitializeMinecraftServer()
@@ -104,6 +122,153 @@ namespace MinecraftServerLauncher
       MinecraftServer.ServerShuttingDown += MinecraftServer_ServerShuttingDown;
       MinecraftServer.ServerStopped += MinecraftServer_ServerStopped;
     }
+
+    #endregion
+
+    #region ===== Test RCon Handling =====
+
+    // For testing purposes:
+    // RCon port = 26665
+    // RCon pass = s45SDikeruF5klsi75iys
+
+    SourceRemoteConsole RCon = new SourceRemoteConsole();
+
+    private void RCon_Connected()
+    {
+      if (InvokeRequired)
+      {
+        Invoke(new Action(RCon_Connected));
+        return;
+      }
+
+      System.Diagnostics.Debug.WriteLine(">>>  Connected to remote server.");
+
+      btnDisconnect.Enabled = true;
+    }
+
+    private void RCon_ConnectFailed(Exception ex)
+    {
+      if (InvokeRequired)
+      {
+        Invoke(new Action<Exception>(RCon_ConnectFailed), ex);
+        return;
+      }
+
+      System.Diagnostics.Debug.WriteLine(">>>  Connection to remote server failed!");
+      System.Diagnostics.Debug.WriteLine("Error message: " + ex.Message);
+
+      RCon.Disconnect();
+
+      btnConnect.Enabled = true;
+      btnDisconnect.Enabled = false;
+    }
+
+    private void RCon_Authenticated()
+    {
+      if (InvokeRequired)
+      {
+        Invoke(new Action(RCon_Authenticated));
+        return;
+      }
+
+      System.Diagnostics.Debug.WriteLine(">>>  Successfully authenticated!");
+
+      txtCommand.Enabled = true;
+      btnExecute.Enabled = true;
+    }
+
+    private void RCon_AuthenticationFailed()
+    {
+      if (InvokeRequired)
+      {
+        Invoke(new Action(RCon_AuthenticationFailed));
+        return;
+      }
+
+      System.Diagnostics.Debug.WriteLine(">>>  Authentication failed! This is likely due to incorrect password!");
+    }
+
+    private void RCon_ServerResponse(string responseMessage)
+    {
+      if (InvokeRequired)
+      {
+        Invoke(new Action<string>(RCon_ServerResponse), responseMessage);
+        return;
+      }
+
+      System.Diagnostics.Debug.WriteLine(">>>  Server response received!");
+      System.Diagnostics.Debug.WriteLine("     Message length: " + responseMessage.Length.ToString());
+      System.Diagnostics.Debug.WriteLine("     Response      : " + responseMessage);
+    }
+
+    private void RCon_Disconnected()
+    {
+      if (InvokeRequired)
+      {
+        Invoke(new Action(RCon_Disconnected));
+        return;
+      }
+
+      System.Diagnostics.Debug.WriteLine(">>>  RCon Disconnected.");
+
+      btnConnect.Enabled = true;
+      btnDisconnect.Enabled = false;
+      txtCommand.Enabled = false;
+      btnExecute.Enabled = false;
+    }
+
+    private void InitializeRCon()
+    {
+      RCon.Connected += RCon_Connected;
+      RCon.ConnectFailed += RCon_ConnectFailed;
+
+      RCon.Authenticated += RCon_Authenticated;
+      RCon.AuthenticationFailed += RCon_AuthenticationFailed;
+
+      RCon.ServerResponse += RCon_ServerResponse;
+
+      RCon.Disconnected += RCon_Disconnected;
+    }
+
+    #region ----- Test Buttons -----
+
+    // For testing purposes:
+    // RCon port = 26665
+    // RCon pass = s45SDikeruF5klsi75iys
+
+    private void btnConnect_Click(object sender, EventArgs e)
+    {
+      if (MinecraftServerRunning)
+      {
+        RCon.Connect(new System.Net.IPAddress(new byte[] { 127, 0, 0, 1 }), 26665, "s45SDikeruF5klsi75iys");
+        btnConnect.Enabled = false;
+      }
+    }
+
+    private void btnDisconnect_Click(object sender, EventArgs e)
+    {
+      if (MinecraftServerRunning)
+      {
+        if (RCon.IsConnected)
+        {
+          RCon.Disconnect();
+          btnDisconnect.Enabled = false;
+        }
+      }
+    }
+
+    private void btnExecute_Click(object sender, EventArgs e)
+    {
+      if (MinecraftServerRunning)
+      {
+        if (RCon.IsConnected)
+        {
+          RCon.Execute(txtCommand.Text);
+        }
+      }
+    }
+
+    #endregion
 
     #endregion
 
@@ -160,21 +325,30 @@ namespace MinecraftServerLauncher
           );
         txtMinecraftServerPath.Focus();
       }
-
     }
 
     private void btnStart_Click(object sender, EventArgs e)
     {
       if (config.MinecraftPath.Length > 0 && config.MinecraftJar.Length > 0 && config.MemorySize > 0)
       {
+        MinecraftServer.RemoteConsolePort = 26665;
+        MinecraftServer.UseRandomizedRConPassword = true;
         MinecraftServer.ConfigureServer(config.MinecraftPath, config.MinecraftJar, config.MemorySize);
-        MinecraftServer.Start();
+        if (!MinecraftServer.Start())
+        {
+          MessageBox.Show(
+            "Some configuration mismatch prevented the server from starting!\n\nPlease check the configuration and try again.",
+            "Unable to start Minecraft server!",
+            MessageBoxButtons.OK,
+            MessageBoxIcon.Exclamation
+            );
+        }
       }
     }
 
     private void btnStop_Click(object sender, EventArgs e)
     {
-
+      MinecraftServer.Stop();
     }
 
     private void btnServerInfo_Click(object sender, EventArgs e)
@@ -182,7 +356,7 @@ namespace MinecraftServerLauncher
       if (config.MinecraftPath.Length > 0 && config.MinecraftJar.Length > 0)
       {
         INIFile serverProp = new INIFile();
-        serverProp.MinecraftServerProperties = true;
+        serverProp.VirtualGrouping = true;
         serverProp.Load(config.MinecraftPath + "server.properties");
 
         string msg = "";
@@ -225,6 +399,13 @@ namespace MinecraftServerLauncher
 
       btnStart.Enabled = true;
       btnStop.Enabled = false;
+
+      // For the RCon test...
+      btnConnect.Enabled = true;
+      btnDisconnect.Enabled = false;
+      txtCommand.Enabled = false;
+      btnExecute.Enabled = false;
+
     }
 
     #endregion
@@ -236,6 +417,8 @@ namespace MinecraftServerLauncher
       InitializeComponent();
 
       this.Shown += MainForm_Shown;
+
+      InitializeRCon();
     }
 
     #endregion

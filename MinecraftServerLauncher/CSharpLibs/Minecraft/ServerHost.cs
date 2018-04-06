@@ -1,4 +1,6 @@
-﻿using System;
+﻿using CSharpLibs.ConfigTools;
+using CSharpLibs.Networking;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
@@ -118,6 +120,116 @@ namespace CSharpLibs.Minecraft
 
     #endregion
 
+    #region Method: GeneratePassword
+
+    private string GeneratePassword()
+    {
+      const string Letters = "qazxswedcvfrtgbnhyujmkiolp0987651234";
+      Random rng = new Random(DateTime.Now.Millisecond);
+      string result = "";
+
+      for (int i = 0; i < 25; i++)
+      {
+        int index = 0;
+        while (index < 1 || index > Letters.Length)
+        {
+          index = rng.Next(1, Letters.Length);
+        }
+        result += Letters[index - 1];
+      }
+
+      return result;
+    }
+
+    #endregion
+
+    #region Method: UpdateServerProperties
+
+    /// <summary>
+    /// Updates the server.properties settings with remote console settings.
+    /// </summary>
+    /// <param name="enableRCon">When set true, remote console will be enabled allowing control of the server. When false, disables RCon and removes the settings</param>
+    private void UpdateServerProperties(bool enableRCon)
+    {
+      if (File.Exists(mvarServerPath + "server.properties"))
+      {
+        INIFile INI = new INIFile(mvarServerPath + "server.properties", true);
+        if (enableRCon)
+        {
+          INI.SetValue("", "enable-rcon", "true");
+          INI.SetValue("", "rcon.port", mvarRemoteConsolePort.ToString());
+          INI.SetValue("", "rcon.password", RConPassword);
+          INI.SetValue("", "broadcast-rcon-to-ops", "true");
+        }
+        else
+        {
+          INI.SetValue("", "enable-rcon", "false");
+          INI.SetValue("", "broadcast-rcon-to-ops", "false");
+          INI.RemoveKey("", "rcon.port");
+          INI.RemoveKey("", "rcon.password");
+        }
+        INI.Save();
+      }
+    }
+
+    #endregion
+
+    #endregion
+
+    #region ===== RemoteConsole Support =====
+
+    SourceRemoteConsole RCon = new SourceRemoteConsole();
+
+    /// <summary>
+    /// The current password in use for remote console.
+    /// </summary>
+    private string RConPassword = "";
+
+    private void RCon_Connected()
+    {
+      //TODO: add whatever is needed after we've connected
+    }
+
+    private void RCon_ConnectFailed(Exception ex)
+    {
+      //TODO: maybe ?
+    }
+
+    private void RCon_Authenticated()
+    {
+      //TODO: handle that we are authenticated
+    }
+
+    private void RCon_AuthenticationFailed()
+    {
+      //TODO: Handle authentication failures
+      // We'll force a disconnect
+      RCon.Disconnect();
+    }
+
+    private void RCon_ServerResponse(string responseMessage)
+    {
+      //TODO: Handle incoming server responses
+    }
+
+    private void RCon_Disconnected()
+    {
+      //TODO: Handle other clean up as needed
+    }
+
+    private void InitializeRCon()
+    {
+      RCon.Connected += RCon_Connected;
+      RCon.ConnectFailed += RCon_ConnectFailed;
+
+      RCon.Authenticated += RCon_Authenticated;
+      RCon.AuthenticationFailed += RCon_AuthenticationFailed;
+
+      RCon.ServerResponse += RCon_ServerResponse;
+
+      RCon.Disconnected += RCon_Disconnected;
+    }
+
     #endregion
 
     #region ===== Thread Handling =====
@@ -162,10 +274,35 @@ namespace CSharpLibs.Minecraft
             {
               OnServerStarted();
             }
+            else if (logMessage.ToLower().IndexOf("rcon running on") > -1)
+            {
+              if (logMessage.IndexOf(':') > -1)
+              {
+                string portInfo = logMessage.Substring(logMessage.LastIndexOf(':') + 1, logMessage.Length - (logMessage.LastIndexOf(':') + 1));
+                int port = 0;
+                if (!int.TryParse(portInfo, out port))
+                {
+                  port = 0;
+                }
+
+                if (port == mvarRemoteConsolePort)
+                {
+                  // We can now safely assume the server is listning for rcon connections!
+                  // So ... start the rcon
+                  RCon.Connect(new byte[] { 127, 0, 0, 1 }, mvarRemoteConsolePort, RConPassword);
+                }
+              }
+
+            }
             else if (logMessage == "Stopping the server" || logMessage == "Stopping server")
             {
               if (!ServerShutdownSignaled)
               {
+                // Tell RCon to disconnect, if it's running
+                if (RCon.IsConnected)
+                {
+                  RCon.Disconnect();
+                }
                 OnServerShuttingDown();
                 ServerShutdownSignaled = true;
               }
@@ -178,6 +315,9 @@ namespace CSharpLibs.Minecraft
       proc.WaitForExit();
 
       proc.Dispose();
+
+      // Clean up the server.properties after run has completed
+      UpdateServerProperties(false);
 
       OnServerStopped();
     }
@@ -224,6 +364,70 @@ namespace CSharpLibs.Minecraft
             mvarMemorySize = value;
           }
         }
+      }
+    }
+
+    #endregion
+
+    #region Property: RemoteConsolePassword
+
+    private string mvarRemoteConsolePassword = "";
+
+    /// <summary>
+    /// Indicates the password to use for authentication by means of remote console.
+    /// </summary>
+    public string RemoteConsolePassword
+    {
+      get { return mvarRemoteConsolePassword; }
+      set
+      {
+        if (!Locked)
+        {
+          if (value.Trim().Length > 0)
+          {
+            mvarRemoteConsolePassword = value.Trim();
+            mvarUseRandomizedRConPassword = false;
+          }
+        }
+      }
+    }
+
+    #endregion
+
+    #region Property: RemoteConsolePort
+
+    private int mvarRemoteConsolePort = 25575;
+
+    /// <summary>
+    /// Indicates the port number to use for remote console access to the Minecraft server.
+    /// </summary>
+    public int RemoteConsolePort
+    {
+      get { return mvarRemoteConsolePort; }
+      set
+      {
+        if (!Locked)
+        {
+          if (value > 1024 || value < 65536)
+          {
+            mvarRemoteConsolePort = value;
+          }
+        }
+      }
+    }
+
+    #endregion
+
+    #region Property: Running
+
+    /// <summary>
+    /// A flag that indicates whether the Minecraft server is running.
+    /// </summary>
+    public bool Running
+    {
+      get
+      {
+        return (ServerThread != null);
       }
     }
 
@@ -284,6 +488,31 @@ namespace CSharpLibs.Minecraft
 
     #endregion
 
+    #region Property: UseRandomizedRConPassword
+
+    private bool mvarUseRandomizedRConPassword = false;
+
+    /// <summary>
+    /// Indicates whether to use randomized remote console passwords.
+    /// </summary>
+    public bool UseRandomizedRConPassword
+    {
+      get { return mvarUseRandomizedRConPassword; }
+      set
+      {
+        if (!Locked)
+        {
+          mvarUseRandomizedRConPassword = value;
+          if (mvarUseRandomizedRConPassword)
+          {
+            mvarRemoteConsolePassword = "";
+          }
+        }
+      }
+    }
+
+    #endregion
+
     #endregion
 
     #region ===== Public Method =====
@@ -322,12 +551,30 @@ namespace CSharpLibs.Minecraft
     /// <summary>
     /// Attempt to start the Minecraft server.
     /// </summary>
-    /// <returns></returns>
+    /// <returns>Returns true if the startup was successful, otherwise false.</returns>
     public bool Start()
     {
+      bool validRConConfig = false;
+
+      RConPassword = "";
+      if (mvarUseRandomizedRConPassword)
+      {
+        validRConConfig = true;
+        RConPassword = GeneratePassword();
+      }
+      else if (mvarRemoteConsolePassword.Trim().Length > 0)
+      {
+        validRConConfig = true;
+        RConPassword = mvarRemoteConsolePassword;
+      }
+
       if (mvarServerPath.Length > 0 && mvarServerJar.Length > 0)
       {
-        if (File.Exists(mvarServerPath + mvarServerJar))
+        if (validRConConfig)
+        {
+          UpdateServerProperties(true);
+        }
+        if (File.Exists(mvarServerPath + mvarServerJar) && validRConConfig)
         {
           // Yup: both path and file exists - let's do this!
 
@@ -350,6 +597,16 @@ namespace CSharpLibs.Minecraft
 
     #region Public Method: Stop
 
+    public void Stop()
+    {
+      if (Running)
+      {
+        if (RCon.IsConnected)
+        {
+          RCon.Execute("stop");
+        }
+      }
+    }
 
     #endregion
 
@@ -364,6 +621,8 @@ namespace CSharpLibs.Minecraft
       mvarServerJar = "";
       mvarServerPath = "";
       Locked = false;
+
+      InitializeRCon();
     }
 
     #endregion
