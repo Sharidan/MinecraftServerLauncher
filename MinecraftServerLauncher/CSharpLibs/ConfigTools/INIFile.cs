@@ -33,6 +33,11 @@ using System.IO;
  * - Added a few extra method overloads to better support Virtual Grouping.
  * - General documentation additions.
  * - General code cleanup to finalize this class.
+ * 
+ * Updated: 11. April 2018
+ * Bugfix:
+ * 
+ * - Fixed VirtualGrouping not working correctly.
  */
 
 namespace CSharpLibs.ConfigTools
@@ -124,7 +129,7 @@ namespace CSharpLibs.ConfigTools
           return g;
         }
       }
-      if (groupName == "" && VirtualGrouping)
+      if (groupName == "" && mvarVirtualGrouping)
       {
         return 0;
       }
@@ -231,10 +236,15 @@ namespace CSharpLibs.ConfigTools
     /// </summary>
     private const string VirtualGroupName = "$$VIRTUAL$$";
 
+    private bool mvarVirtualGrouping = false;
     /// <summary>
     /// Determines whether the INI file has no groups and therefore virtual grouping is required. When set to true; creates one single virtual group in which all key/value pairs are kept.
     /// </summary>
-    public bool VirtualGrouping { get; set; } = false;
+    public bool VirtualGrouping
+    {
+      get { return mvarVirtualGrouping; }
+      set { mvarVirtualGrouping = value; }
+    }
 
     #endregion
 
@@ -328,7 +338,7 @@ namespace CSharpLibs.ConfigTools
     /// <returns>Returns the value of the specified key.</returns>
     public string GetValue(string keyName)
     {
-      if (VirtualGrouping)
+      if (mvarVirtualGrouping)
       {
         return GetValue(VirtualGroupName, keyName);
       }
@@ -424,7 +434,7 @@ namespace CSharpLibs.ConfigTools
     /// <param name="keyValue">The value to create or update.</param>
     public void SetValue(string keyName, string keyValue)
     {
-      if (VirtualGrouping)
+      if (mvarVirtualGrouping)
       {
         SetValue(VirtualGroupName, keyName, keyValue);
       }
@@ -453,7 +463,7 @@ namespace CSharpLibs.ConfigTools
 
       for (int g = 0; g < mvarGroups.Length; g++)
       {
-        if (VirtualGrouping && mvarGroups[g].Name == VirtualGroupName)
+        if (mvarVirtualGrouping && mvarGroups[g].Name == VirtualGroupName)
         {
           for (int c = 0; c < Comments.Length; c++)
           {
@@ -497,7 +507,7 @@ namespace CSharpLibs.ConfigTools
 
         if (line.Length > 0)
         {
-          if (VirtualGrouping && line[0] == '#')
+          if (mvarVirtualGrouping && line[0] == '#')
           {
             // Here we need to store the already written comments!
             Array.Resize(ref Comments, Comments.Length + 1);
@@ -517,7 +527,7 @@ namespace CSharpLibs.ConfigTools
             }
             else if (line.IndexOf('=') > -1)
             {
-              if (groupIndex == -1 && VirtualGrouping)
+              if (groupIndex == -1 && mvarVirtualGrouping)
               {
                 Array.Resize(ref mvarGroups, mvarGroups.Length + 1);
                 mvarGroups[mvarGroups.Length - 1] = new INIGroup(VirtualGroupName);
@@ -582,7 +592,7 @@ namespace CSharpLibs.ConfigTools
     public void Load(string filePathName)
     {
       UpdatePath(filePathName);
-      VirtualGrouping = false;
+      mvarVirtualGrouping = false;
       Load();
     }
 
@@ -594,7 +604,7 @@ namespace CSharpLibs.ConfigTools
     public void Load(string filePathName, bool virtualGrouping)
     {
       UpdatePath(filePathName);
-      VirtualGrouping = true;
+      mvarVirtualGrouping = virtualGrouping;
       Load();
     }
 
@@ -670,8 +680,7 @@ namespace CSharpLibs.ConfigTools
     public INIFile(string filePathName, bool virtualGrouping)
     {
       mvarGroups = new INIGroup[0];
-      VirtualGrouping = virtualGrouping;
-      Load(filePathName);
+      Load(filePathName, virtualGrouping);
     }
 
     #endregion
