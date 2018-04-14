@@ -47,6 +47,7 @@
     <Compile Include="CSharpLibs\ConfigTools\INIFile.cs" />
     <Compile Include="CSharpLibs\Minecraft\PlayerProfile.cs" />
     <Compile Include="CSharpLibs\Minecraft\ServerHost.cs" />
+    <Compile Include="CSharpLibs\Minecraft\ServerProfile.cs" />
     <Compile Include="CSharpLibs\Minecraft\ServerProfileConfig.cs" />
     <Compile Include="CSharpLibs\Networking\SourceRemoteConsole.cs" />
     <Compile Include="Forms\MainForm.cs">
@@ -63,6 +64,15 @@
     <Compile Include="Forms\Dialogs\ServerConfigDialog.Designer.cs">
       <DependentUpon>ServerConfigDialog.cs</DependentUpon>
     </Compile>
+    <Compile Include="Forms\Dialogs\ServerProfileConfigDialog.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Forms\Dialogs\ServerProfileConfigDialog.Designer.cs">
+      <DependentUpon>ServerProfileConfigDialog.cs</DependentUpon>
+    </Compile>
+    <EmbeddedResource Include="Forms\Dialogs\ServerProfileConfigDialog.resx">
+      <DependentUpon>ServerProfileConfigDialog.cs</DependentUpon>
+    </EmbeddedResource>
     <EmbeddedResource Include="Forms\MainForm.resx">
       <DependentUpon>MainForm.cs</DependentUpon>
     </EmbeddedResource>

@@ -390,6 +390,22 @@ namespace CSharpLibs.ConfigTools
       }
     }
 
+    /// <summary>
+    /// While in VirtualGrouping mode: Removes the specified key.
+    /// </summary>
+    /// <param name="keyName">The key to remove.</param>
+    public void RemoveKey(string keyName)
+    {
+      if (mvarVirtualGrouping)
+      {
+        RemoveKey(VirtualGroupName, keyName);
+      }
+      else
+      {
+        throw new Exception("Only available in VirtualGrouping mode!");
+      }
+    }
+
     #endregion
 
     #region Method: SetValue
@@ -557,6 +573,14 @@ namespace CSharpLibs.ConfigTools
     #region Public Method: Load
 
     /// <summary>
+    /// Clears the contents of the INI structure.
+    /// </summary>
+    public void Clear()
+    {
+      mvarGroups = new INIGroup[0];
+    }
+
+    /// <summary>
     /// Attempts to load the via properties specified file from disk.
     /// </summary>
     public void Load()
@@ -591,9 +615,7 @@ namespace CSharpLibs.ConfigTools
     /// <param name="filePathName">The fully qualified path to the INI file to load.</param>
     public void Load(string filePathName)
     {
-      UpdatePath(filePathName);
-      mvarVirtualGrouping = false;
-      Load();
+      Load(filePathName, false);
     }
 
     /// <summary>

@@ -41,7 +41,7 @@ namespace CSharpLibs.Minecraft
     /// <param name="playerName">The name of the player that joined.</param>
     /// <param name="playerUUID">The Mojang UUID of the player's account.</param>
     /// <param name="ip">The IP address the player connected from.</param>
-    public delegate void PlayerJoinedEventHandler(string playerName, string playerUUID, byte[] ip);
+    public delegate void PlayerJoinedEventHandler(int serverHostID, string playerName, string playerUUID, byte[] ip);
 
     /// <summary>
     /// Triggers when a new player joins the server.
@@ -54,7 +54,7 @@ namespace CSharpLibs.Minecraft
     /// <param name="player"></param>
     protected void OnPlayerJoined(ref PlayerProfile player)
     {
-      PlayerJoined?.Invoke(player.Name, player.UUID, player.IP);
+      PlayerJoined?.Invoke(mvarID, player.Name, player.UUID, player.IP);
     }
 
     #endregion
@@ -67,7 +67,7 @@ namespace CSharpLibs.Minecraft
     /// <param name="playerName">The name of the player that parted/disconnected.</param>
     /// <param name="playerUUID">The Mojang UUID of the player's account.</param>
     /// <param name="ip">The IP address the player connected from.</param>
-    public delegate void PlayerPartedEventHandler(string playerName, string playerUUID, byte[] ip);
+    public delegate void PlayerPartedEventHandler(int serverHostID, string playerName, string playerUUID, byte[] ip);
 
     /// <summary>
     /// Triggers when a player parts/disconnects from the game.
@@ -80,7 +80,7 @@ namespace CSharpLibs.Minecraft
     /// <param name="player"></param>
     protected void OnPlayerParted(ref PlayerProfile player)
     {
-      PlayerParted?.Invoke(player.Name, player.UUID, player.IP);
+      PlayerParted?.Invoke(mvarID, player.Name, player.UUID, player.IP);
     }
 
     #endregion
@@ -289,8 +289,8 @@ namespace CSharpLibs.Minecraft
         {
           INI.SetValue("enable-rcon", "false");
           INI.SetValue("broadcast-rcon-to-ops", "false");
-          INI.RemoveKey("", "rcon.port");
-          INI.RemoveKey("", "rcon.password");
+          INI.RemoveKey("rcon.port");
+          INI.RemoveKey("rcon.password");
         }
         INI.Save();
       }
@@ -394,10 +394,20 @@ namespace CSharpLibs.Minecraft
         // Grab a copy of the raw data, the last part of it, starting just past the last "[" to the end of the string
         string sourceInfo = rawData.Substring(rawData.LastIndexOf('[') + 1, rawData.Length - (rawData.LastIndexOf('[') + 1));
         // Now that we have sourceInfo, we can simply split on the slash
-        string[] sourceParts = sourceInfo.Split('/');
-        // ... to get: Source and LogLevel
-        string source = sourceParts[0];
-        string logLevel = sourceParts[1];
+        string source = "";
+        string logLevel = "";
+        if (sourceInfo.IndexOf('/') > -1)
+        {
+          string[] sourceParts = sourceInfo.Split('/');
+          // ... to get: Source and LogLevel
+          source = sourceParts[0];
+          logLevel = sourceParts[1];
+        }
+        else
+        {
+          source = sourceInfo;
+          logLevel = "INFO";
+        }
         // Lastly, lets grab the timestamp
         string timestamp = rawData.Substring(0, rawData.IndexOf(']'));
         // Remove the leading bracket
@@ -521,7 +531,6 @@ namespace CSharpLibs.Minecraft
                       mvarOnlinePlayers.Add(player);
                     }
                     //NOTE: if needed, add an event that we can raise when a player joins
-                    System.Diagnostics.Debug.WriteLine("### >>> " + player.Name + " has joined the game.");
                     // Raise the PlayerJoined event
                     OnPlayerJoined(ref player);
                   }
@@ -565,7 +574,6 @@ namespace CSharpLibs.Minecraft
                     player = mvarOnlinePlayers[playerIndex];
                     mvarOnlinePlayers.RemoveAt(playerIndex);
                     //NOTE: we could add an event that can be raised when a player disconnects
-                    System.Diagnostics.Debug.WriteLine("### >>> " + firstWord + " has left the game.");
                   }
                 }
                 
@@ -631,6 +639,9 @@ namespace CSharpLibs.Minecraft
       // Clean up the server.properties after run has completed
       UpdateServerProperties(false);
 
+      // Unlock since we are shutting down.
+      Locked = false;
+
       OnServerStopped();
     }
 
@@ -645,7 +656,7 @@ namespace CSharpLibs.Minecraft
 
     #region Property: ID
 
-    private int mvarID = 0;
+    private int mvarID = -1;
 
     /// <summary>
     /// Holds the ID of this Minecraft server instance.
@@ -753,7 +764,19 @@ namespace CSharpLibs.Minecraft
     {
       get
       {
-        return (ServerThread != null);
+        bool result = false;
+
+        if (ServerThread != null)
+        {
+          result = ServerThread.IsAlive;
+
+          if (!ServerThread.IsAlive)
+          {
+            ServerThread = null;
+          }
+        }
+
+        return result;
       }
     }
 
@@ -868,6 +891,19 @@ namespace CSharpLibs.Minecraft
           }
         }
       }
+    }
+
+    /// <summary>
+    /// Configures the path, jar and memory size for this server instance.
+    /// </summary>
+    /// <param name="profile">The server profile to apply.</param>
+    public void ConfigureServer(ServerProfile profile)
+    {
+      ConfigureServer(
+        profile.Path,
+        profile.Jar,
+        profile.MemorySize
+        );
     }
 
     #endregion

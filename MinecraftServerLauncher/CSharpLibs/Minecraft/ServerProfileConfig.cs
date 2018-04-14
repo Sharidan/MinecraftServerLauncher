@@ -13,6 +13,8 @@ namespace CSharpLibs.Minecraft
 
     INIFile configINI = new INIFile();
 
+    private bool Changed = false;
+
     #region ===== Path Handling =====
 
     public string Path { get; private set; } = "";
@@ -45,8 +47,13 @@ namespace CSharpLibs.Minecraft
 
     #endregion
 
-    #region ===== File I/O =====
+    #region ===== Internal Helper Methods =====
 
+    /// <summary>
+    /// Converts the passed string into an int value.
+    /// </summary>
+    /// <param name="value">The value to convert.</param>
+    /// <returns>Returns an int value based on the string or zero if unable to convert.</returns>
     private int FixInt(string value)
     {
       int result = 0;
@@ -59,52 +66,159 @@ namespace CSharpLibs.Minecraft
       return result;
     }
 
+    #endregion
+
+    #region ===== File I/O =====
+
+    #region Method: LoadConfig
+
     private void LoadConfig()
     {
       string fileName = Path + "ServerProfile.cfg";
 
       configINI.Load(fileName);
 
-      // For now we'll ignore the profile count
+      int count = FixInt(configINI.GetValue("Profiles", "Count"));
 
-      MinecraftPath = configINI.GetValue("Profile1", "MinecraftPath");
-      MinecraftJar = configINI.GetValue("Profile1", "Jar");
-      MemorySize = FixInt(configINI.GetValue("Profile1", "Memory"));
+      mvarProfiles.Clear();
+
+      for (int p = 0; p < count; p++)
+      {
+        string name = configINI.GetValue("Profile" + p.ToString(), "Name");
+        string serverPath = configINI.GetValue("Profile" + p.ToString(), "ServerPath");
+        string serverJar = configINI.GetValue("Profile" + p.ToString(), "ServerJar");
+        int memory = FixInt(configINI.GetValue("Profile" + p.ToString(), "Memory"));
+
+        mvarProfiles.Add(new ServerProfile(name, serverPath, serverJar, memory));
+      }
+
+      Changed = false;
     }
+
+    #endregion
+
+    #region Method: SaveConfig
 
     private void SaveConfig()
     {
       string fileName = Path + "ServerProfile.cfg";
 
-      configINI.SetValue("Profiles", "Count", "1");
+      configINI.Clear();
 
-      configINI.SetValue("Profile1", "MinecraftPath", MinecraftPath);
-      configINI.SetValue("Profile1", "Jar", MinecraftJar);
-      configINI.SetValue("Profile1", "Memory", MemorySize.ToString());
+      // First of all: save the number of profiles
+      configINI.SetValue("Profiles", "Count", mvarProfiles.Count.ToString());
+
+      // Next up: save the individual profiles
+      for (int p = 0; p < mvarProfiles.Count; p++)
+      {
+        configINI.SetValue("Profile" + p.ToString(), "Name", mvarProfiles[p].Name);
+        configINI.SetValue("Profile" + p.ToString(), "ServerPath", mvarProfiles[p].Path);
+        configINI.SetValue("Profile" + p.ToString(), "ServerJar", mvarProfiles[p].Jar);
+        configINI.SetValue("Profile" + p.ToString(), "Memory", mvarProfiles[p].MemorySize.ToString());
+      }
 
       configINI.Save(fileName);
+
+      // Clear the changed flag!
+      Changed = false;
     }
+
+    #endregion
 
     #endregion
 
     #region ===== Properties =====
 
-    public string MinecraftPath { get; set; } = "";
+    #region Property: Count
 
-    public string MinecraftJar { get; set; } = "minecraft_server.jar";
+    /// <summary>
+    /// Returns the total number of profiles stored.
+    /// </summary>
+    public int Count
+    {
+      get { return mvarProfiles.Count; }
+    }
 
-    public int MemorySize { get; set; } = 1024;
+    #endregion
+
+    #region Property: Profiles
+
+    private List<ServerProfile> mvarProfiles = new List<ServerProfile>();
+
+    /// <summary>
+    /// Contains the list of current server profiles.
+    /// </summary>
+    public List<ServerProfile> Profiles
+    {
+      get { return mvarProfiles; }
+      set
+      {
+        mvarProfiles = value;
+        Changed = true;
+      }
+    }
+
+    #endregion
 
     #endregion
 
     #region ===== Public Methods =====
 
+    #region Method: Add
+
+    /// <summary>
+    /// Adds the passed server profile to the config list.
+    /// </summary>
+    /// <param name="profile">The profile to add.</param>
+    public void Add(ServerProfile profile)
+    {
+      mvarProfiles.Add(profile);
+      Changed = true;
+    }
+
+    #endregion
+
+    #region Method: Remove
+
+    /// <summary>
+    /// Removes the specified profile from the profile list.
+    /// </summary>
+    /// <param name="profile">The profile to remove.</param>
+    public void Remove(ServerProfile profile)
+    {
+      mvarProfiles.Remove(profile);
+      Changed = true;
+    }
+
+    /// <summary>
+    /// Removes the profile at the specified index from the profile list.
+    /// </summary>
+    /// <param name="profileIndex">The index number of the profile to remove.</param>
+    public void Remove(int profileIndex)
+    {
+      if (profileIndex >= 0 && profileIndex < mvarProfiles.Count)
+      {
+        mvarProfiles.RemoveAt(profileIndex);
+        Changed = true;
+      }
+    }
+
+    #endregion
+
+    #region Method: Save
+
+    /// <summary>
+    /// Saves any changes made to the server profiles list.
+    /// </summary>
     public void Save()
     {
-      //TODO: maybe add in a check whether something has changed
-      // If changes exist, then do the save, otherwise skip
-      SaveConfig();
+      if (Changed)
+      {
+        SaveConfig();
+      }
     }
+
+    #endregion
 
     #endregion
 
@@ -113,6 +227,7 @@ namespace CSharpLibs.Minecraft
     public ServerProfileConfig()
     {
       InitializeConfigPath();
+
       LoadConfig();
     }
 
