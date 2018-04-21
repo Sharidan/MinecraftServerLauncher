@@ -84,6 +84,7 @@
     <Compile Include="Properties\Resources.Designer.cs">
       <AutoGen>True</AutoGen>
       <DependentUpon>Resources.resx</DependentUpon>
+      <DesignTime>True</DesignTime>
     </Compile>
     <EmbeddedResource Include="Forms\Dialogs\ServerConfigDialog.resx">
       <DependentUpon>ServerConfigDialog.cs</DependentUpon>
@@ -100,6 +101,18 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\Icons\Running.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\Icons\Starting.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\Icons\Stopped.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\Icons\Stopping.png" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

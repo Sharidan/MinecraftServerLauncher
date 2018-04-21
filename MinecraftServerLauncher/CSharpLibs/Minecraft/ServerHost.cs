@@ -19,16 +19,16 @@ namespace CSharpLibs.Minecraft
 
     #region Event: ConsoleChanged
 
-    public delegate void ConsoleChangedEventHandler(int serverHostID, string logLevel, string logMessage);
+    public delegate void ConsoleChangedEventHandler(int serverHostID, string logLevel, string logMessage, string modID);
 
     /// <summary>
     /// Triggers every time the Minecraft server console changes.
     /// </summary>
     public event ConsoleChangedEventHandler ConsoleChanged;
 
-    protected void OnConsoleChanged(string logLevel, string logMessage)
+    protected void OnConsoleChanged(string logLevel, string logMessage, string modID)
     {
-      ConsoleChanged?.Invoke(mvarID, logLevel, logMessage);
+      ConsoleChanged?.Invoke(mvarID, logLevel, logMessage, modID);
     }
 
     #endregion
@@ -369,19 +369,23 @@ namespace CSharpLibs.Minecraft
       public string Source;
       public string LogLevel;
       public string LogMessage;
+      public string ModID;
 
-      public LogEntry(DateTime timestamp, string source, string logLevel, string logMessage)
+      public LogEntry(DateTime timestamp, string source, string logLevel, string logMessage, string modID)
       {
         Timestamp = timestamp;
         Source = source.Trim();
         LogLevel = logLevel.Trim();
         LogMessage = logMessage.Trim();
+        ModID = modID.Trim();
       }
     }
 
     // [12:10:51] [Server thread/INFO]: Done (1,888s)! For help, type "help" or "?"
     // [12:10:58] [User Authenticator #1/INFO]: UUID of player Sharidan is ca8116f5-73b4-4649-98c3-da43d43cd40d
     // [12:10:58] [Server thread/INFO]: Sharidan[/127.0.0.1:49766] logged in with entity id 134 at (277.49074954187483, 69.0, 171.72186789583282)
+
+    // [12:10:58] [Server thread/INFO] [appliedenergistics]: Sharidan[/127.0.0.1:49766] logged in with entity id 134 at (277.49074954187483, 69.0, 171.72186789583282)
 
     private LogEntry ParseConsoleLine(string consoleLine)
     {
@@ -391,9 +395,22 @@ namespace CSharpLibs.Minecraft
         string rawData = consoleLine.Substring(0, consoleLine.IndexOf("]:"));
         // Grab a copy of the log message from the console line, starting just past "]:" and remove any leading and trailing spaces
         string logMessage = consoleLine.Substring(consoleLine.IndexOf("]:") + 2, consoleLine.Length - (consoleLine.IndexOf("]:") + 2)).Trim();
-        // Grab a copy of the raw data, the last part of it, starting just past the last "[" to the end of the string
-        string sourceInfo = rawData.Substring(rawData.LastIndexOf('[') + 1, rawData.Length - (rawData.LastIndexOf('[') + 1));
-        // Now that we have sourceInfo, we can simply split on the slash
+        // Split the raw data from the log, into parts dividing at "]"
+        string[] bracketParts = rawData.Split(']');
+        string timestamp = "";
+        string sourceInfo = "";
+        string modID = "";
+
+        if (bracketParts.Length >= 2)
+        {
+          timestamp = bracketParts[0].Replace("[", "").Trim();
+          sourceInfo = bracketParts[1].Replace("[", "").Trim();
+          if (bracketParts.Length == 3)
+          {
+            modID = bracketParts[2].Replace("[", "").Trim();
+          }
+        }
+
         string source = "";
         string logLevel = "";
         if (sourceInfo.IndexOf('/') > -1)
@@ -408,19 +425,23 @@ namespace CSharpLibs.Minecraft
           source = sourceInfo;
           logLevel = "INFO";
         }
-        // Lastly, lets grab the timestamp
-        string timestamp = rawData.Substring(0, rawData.IndexOf(']'));
-        // Remove the leading bracket
-        timestamp = timestamp.Replace("[", "").Trim();
-        // Split the timestamp parts:
-        string[] timestampParts = timestamp.Split(':');
-        // Convert the 3 time components
-        int hour = FixInt(timestampParts[0]);
-        int minute = FixInt(timestampParts[1]);
-        int second = FixInt(timestampParts[2]);
 
-        // As jobun44 suggested in chat, this is the faster way of converting the timestamp:
-        // DateTime logDate = DateTime.ParseExact(timestamp, "HH:mm:ss", CultureInfo.InvariantCulture);
+        int hour = 0;
+        int minute = 0;
+        int second = 0;
+
+        if (timestamp.IndexOf(':') > -1)
+        {
+          // Split the timestamp parts:
+          string[] timestampParts = timestamp.Split(':');
+          // Convert the 3 time components
+          hour = FixInt(timestampParts[0]);
+          minute = FixInt(timestampParts[1]);
+          second = FixInt(timestampParts[2]);
+
+          // As jobun44 suggested in chat, this is the faster way of converting the timestamp:
+          // DateTime logDate = DateTime.ParseExact(timestamp, "HH:mm:ss", CultureInfo.InvariantCulture);
+        }
 
         return new LogEntry(new DateTime(
           DateTime.Now.Year,
@@ -432,11 +453,12 @@ namespace CSharpLibs.Minecraft
           ),
           source,
           logLevel,
-          logMessage
+          logMessage,
+          modID
           );
       }
 
-      return new LogEntry(DateTime.Now, "", "", "");
+      return new LogEntry(DateTime.Now, "", "", "", "");
     }
 
     #endregion
@@ -628,7 +650,7 @@ namespace CSharpLibs.Minecraft
             // Simple thing to do: cut away "user authenticator" and convert to int - expose as property, job done! :)
           }
 
-          OnConsoleChanged(entry.LogLevel, line);
+          OnConsoleChanged(entry.LogLevel, line, entry.ModID);
         }
       }
 

@@ -39,6 +39,8 @@
       this.nudMemory = new System.Windows.Forms.NumericUpDown();
       this.btnAccept = new System.Windows.Forms.Button();
       this.btnCancel = new System.Windows.Forms.Button();
+      this.btnProperties = new System.Windows.Forms.Button();
+      this.label5 = new System.Windows.Forms.Label();
       ((System.ComponentModel.ISupportInitialize)(this.nudMemory)).BeginInit();
       this.SuspendLayout();
       // 
@@ -169,6 +171,26 @@
       this.btnCancel.UseVisualStyleBackColor = true;
       this.btnCancel.Click += new System.EventHandler(this.btnCancel_Click);
       // 
+      // btnProperties
+      // 
+      this.btnProperties.Location = new System.Drawing.Point(112, 195);
+      this.btnProperties.Name = "btnProperties";
+      this.btnProperties.Size = new System.Drawing.Size(75, 23);
+      this.btnProperties.TabIndex = 11;
+      this.btnProperties.Text = "&Properties";
+      this.btnProperties.UseVisualStyleBackColor = true;
+      this.btnProperties.Click += new System.EventHandler(this.btnProperties_Click);
+      // 
+      // label5
+      // 
+      this.label5.AutoSize = true;
+      this.label5.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(224)))), ((int)(((byte)(224)))), ((int)(((byte)(224)))));
+      this.label5.Location = new System.Drawing.Point(26, 200);
+      this.label5.Name = "label5";
+      this.label5.Size = new System.Drawing.Size(73, 13);
+      this.label5.TabIndex = 12;
+      this.label5.Text = "Server config:";
+      // 
       // ServerProfileConfigDialog
       // 
       this.AcceptButton = this.btnAccept;
@@ -177,6 +199,8 @@
       this.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(64)))), ((int)(((byte)(64)))), ((int)(((byte)(64)))));
       this.CancelButton = this.btnCancel;
       this.ClientSize = new System.Drawing.Size(509, 241);
+      this.Controls.Add(this.label5);
+      this.Controls.Add(this.btnProperties);
       this.Controls.Add(this.btnCancel);
       this.Controls.Add(this.btnAccept);
       this.Controls.Add(this.nudMemory);
@@ -214,5 +238,7 @@
     private System.Windows.Forms.NumericUpDown nudMemory;
     private System.Windows.Forms.Button btnAccept;
     private System.Windows.Forms.Button btnCancel;
+    private System.Windows.Forms.Button btnProperties;
+    private System.Windows.Forms.Label label5;
   }
 }

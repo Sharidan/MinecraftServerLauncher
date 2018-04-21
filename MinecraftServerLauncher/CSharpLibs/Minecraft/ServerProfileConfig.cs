@@ -178,6 +178,26 @@ namespace CSharpLibs.Minecraft
 
     #endregion
 
+    #region Method: AssignID
+
+    /// <summary>
+    /// Assigns the passed ID to the specified server profile.
+    /// </summary>
+    /// <param name="profileIndex">The index of the server profile to assign an ID to.</param>
+    /// <param name="newID">The ID to assign to this server profile.</param>
+    public void AssignID(int profileIndex, int newID)
+    {
+      if (profileIndex >= 0 && profileIndex < mvarProfiles.Count)
+      {
+        ServerProfile profile = mvarProfiles[profileIndex];
+        profile.ID = newID;
+        mvarProfiles[profileIndex] = profile;
+        Changed = true;
+      }
+    }
+
+    #endregion
+
     #region Method: Remove
 
     /// <summary>

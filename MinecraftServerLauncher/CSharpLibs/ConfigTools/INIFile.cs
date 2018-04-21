@@ -38,6 +38,12 @@ using System.IO;
  * Bugfix:
  * 
  * - Fixed VirtualGrouping not working correctly.
+ * 
+ * Updated: 20. April 2018
+ * Addition:
+ * 
+ * - Added comment handling features for Virtual Grouping.
+ * 
  */
 
 namespace CSharpLibs.ConfigTools
@@ -82,10 +88,55 @@ namespace CSharpLibs.ConfigTools
     /// </summary>
     private INIGroup[] mvarGroups = new INIGroup[0];
 
+
+    #endregion
+
+    #region ===== VirtualGrouping Comments =====
+
     /// <summary>
     /// Internal buffer for comments. Only used when .VirtualGrouping = true
     /// </summary>
     private string[] Comments = new string[0];
+
+    #region Method: AddComment
+
+    /// <summary>
+    /// Adds a comment line to the configuration file.
+    /// </summary>
+    /// <param name="comment">The text comment to add. Must be # prefixed.</param>
+    public void AddComment(string comment)
+    {
+      if (mvarVirtualGrouping)
+      {
+        Array.Resize(ref Comments, Comments.Length + 1);
+        Comments[Comments.Length - 1] = comment.Trim();
+      }
+      else
+      {
+        throw new Exception("Only available in VirtualGrouping mode!");
+      }
+    }
+
+    #endregion
+
+    #region Method: ClearComments
+
+    /// <summary>
+    /// Deletes any and all comments that might exist. Only while .VirtualGrouping = true
+    /// </summary>
+    public void ClearComments()
+    {
+      if (mvarVirtualGrouping)
+      {
+        Comments = new string[0];
+      }
+      else
+      {
+        throw new Exception("Only available in VirtualGrouping mode!");
+      }
+    }
+
+    #endregion
 
     #endregion
 

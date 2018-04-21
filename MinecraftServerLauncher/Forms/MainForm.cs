@@ -35,16 +35,20 @@ namespace MinecraftServerLauncher
 
     private void CheckServerProfiles()
     {
-
       for (int p = 0; p < Config.Count; p++)
       {
+        if (Config.Profiles[p].ID == -1)
+        {
+          // Assign a new ID to this server profile.
+          Config.AssignID(p, NextServerID());
+        }
+
+        ServerProfile profile = Config.Profiles[p];
+
         if (File.Exists(Config.Profiles[p].Path + Config.Profiles[p].Jar))
         {
           if (File.Exists(Config.Profiles[p].Path + "server-icon.png"))
           {
-            ServerProfile profile = Config.Profiles[p];
-            bool iconLoaded = false;
-
             if (profile.Icon != null)
             {
               profile.Icon.Dispose();
@@ -54,7 +58,6 @@ namespace MinecraftServerLauncher
             try
             {
               profile.Icon = new Bitmap(Config.Profiles[p].Path + "server-icon.png");
-              iconLoaded = true;
             }
             catch
             {
@@ -65,16 +68,42 @@ namespace MinecraftServerLauncher
               profile.Icon = null;
             }
 
-            if (iconLoaded)
-            {
-              Config.Profiles[p] = profile;
-            }
 
           }
         }
+
+        INIFile serverProperties = new INIFile(Config.Profiles[p].Path + "server.properties", true);
+
+        profile.MaxPlayers = FixInt(serverProperties.GetValue("max-players"));
+        profile.Port = FixInt(serverProperties.GetValue("server-port"));
+        profile.MOTD = serverProperties.GetValue("motd");
+
+        Config.Profiles[p] = profile;
       }
 
       Invalidate();
+    }
+
+    #endregion
+
+    #region Method: FixInt
+
+    /// <summary>
+    /// Attempts to convert the passed string value into an int number.
+    /// </summary>
+    /// <param name="value">The value to convert.</param>
+    /// <returns>Returns the integer representation of the passed string if successful, otherwise zero.</returns>
+    private int FixInt(string value)
+    {
+      int result = 0;
+
+      // Try to parse the string as a number, if not successful
+      if (!int.TryParse(value, out result))
+      { // force the result to zero
+        result = 0;
+      }
+
+      return result;
     }
 
     #endregion
@@ -102,6 +131,78 @@ namespace MinecraftServerLauncher
     private int GetMouseProfileIndex(MouseEventArgs e)
     {
       return GetMouseProfileIndex(e.X, e.Y);
+    }
+
+    #endregion
+
+    #region Method: GetResourceBitmapByName
+
+    private Bitmap GetResourceImageByName(string imageName)
+    {
+      System.Reflection.Assembly asm = System.Reflection.Assembly.GetExecutingAssembly();
+      string resourceName = asm.GetName().Name + ".Properties.Resources";
+      var rm = new System.Resources.ResourceManager(resourceName, asm);
+      return (Bitmap)rm.GetObject(imageName);
+    }
+
+    #endregion
+
+    #region Method: GetServerHostIndex
+
+    /// <summary>
+    /// Attempts to find a matching ServerHost instance within the server hosts list, based on the passed ID.
+    /// </summary>
+    /// <param name="serverID">The server ID to look for.</param>
+    /// <returns>Returns the list index if found, otherwise -1.</returns>
+    private int GetServerHostIndex(int serverID)
+    {
+      for (int s = 0; s < mvarServerHosts.Count; s++)
+      {
+        if (mvarServerHosts[s].ID == serverID)
+        {
+          return s;
+        }
+      }
+
+      return -1;
+    }
+
+    #endregion
+
+    #region Method: GetServerProfileIndex
+
+    /// <summary>
+    /// Attempts to find a matching ServerProfile (within the Config), based on the passed ID.
+    /// </summary>
+    /// <param name="serverID">The server ID to look for.</param>
+    /// <returns>Returns the list index if found, otherwise -1.</returns>
+    private int GetServerProfileIndex(int serverID)
+    {
+      for (int s = 0; s < Config.Profiles.Count; s++)
+      {
+        if (Config.Profiles[s].ID == serverID)
+        {
+          return s;
+        }
+      }
+
+      return -1;
+    }
+
+    #endregion
+
+    #region Method: NextServerID
+
+    private int CurrentServerID = -1;
+
+    /// <summary>
+    /// Generates the next available server ID.
+    /// </summary>
+    /// <returns>Returns an available server ID.</returns>
+    private int NextServerID()
+    {
+      CurrentServerID++;
+      return CurrentServerID;
     }
 
     #endregion
@@ -146,6 +247,67 @@ namespace MinecraftServerLauncher
 
     #endregion
 
+    #region Method: UpdatePlayerCount
+
+    private void UpdatePlayerCount(int serverHostID)
+    {
+      int serverProfileIndex = GetServerProfileIndex(serverHostID);
+      if (serverProfileIndex > -1)
+      {
+        int serverHostIndex = GetServerHostIndex(serverHostID);
+        if (serverHostIndex > -1)
+        {
+          int playerCount = mvarServerHosts[serverHostIndex].OnlinePlayers.Count;
+          if (Config.Profiles[serverProfileIndex].PlayerCount != playerCount)
+          {
+            ServerProfile profile = Config.Profiles[serverProfileIndex];
+            profile.PlayerCount = playerCount;
+            Config.Profiles[serverProfileIndex] = profile;
+            // Force an update of the UI
+            Invalidate();
+          }
+        }
+      }
+    }
+
+    #endregion
+
+    #region Method: UpdateServerStatus
+
+    private enum ServerStatus
+    {
+      Stopped = 0,
+      Starting = 1,
+      Running = 2,
+      Stopping = 3
+    }
+
+    private void UpdateServerStatus(int serverHostID, ServerStatus newStatus)
+    {
+      int serverProfileIndex = GetServerProfileIndex(serverHostID);
+      if (serverProfileIndex > -1)
+      {
+        /*
+         * Status:
+         *   0 = Stopped
+         *   1 = Starting up
+         *   2 = Running
+         *   3 = Stopping / shutting down
+         * 
+         */
+        if (Config.Profiles[serverProfileIndex].Status != (byte)newStatus)
+        {
+          ServerProfile profile = Config.Profiles[serverProfileIndex];
+          profile.Status = (byte)newStatus;
+          Config.Profiles[serverProfileIndex] = profile;
+          // Force an update of the UI
+          Invalidate();
+        }
+      }
+    }
+
+    #endregion
+    
     #endregion
 
     #region ===== ServerHost Events =====
@@ -158,22 +320,25 @@ namespace MinecraftServerLauncher
         return;
       }
 
-      //WARNING: This is assuming both lists are synchronized
-      if (profileSelectionIndex == serverHostID)
+      // Thread safe past this point
+      UpdateServerStatus(serverHostID, ServerStatus.Starting);
+
+      if (Config.Profiles[profileSelectionIndex].ID == serverHostID)
       {
         btnStart.Enabled = false;
       }
     }
 
-    private void ServerHost_ConsoleChanged(int serverHostID, string logLevel, string logMessage)
+    private void ServerHost_ConsoleChanged(int serverHostID, string logLevel, string logMessage, string modID)
     {
       if (InvokeRequired)
       {
-        Invoke(new Action<int, string, string>(ServerHost_ConsoleChanged), serverHostID, logLevel, logMessage);
+        Invoke(new Action<int, string, string, string>(ServerHost_ConsoleChanged), serverHostID, logLevel, logMessage, modID);
         return;
       }
 
       // leave as is for now ...
+      System.Diagnostics.Debug.WriteLine("#" + serverHostID.ToString() + " [" + logLevel + "] [" + modID + "]: " + logMessage);
     }
 
     private void ServerHost_ServerStarted(int serverHostID)
@@ -184,8 +349,10 @@ namespace MinecraftServerLauncher
         return;
       }
 
-      //WARNING: This is assuming both lists are synchronized
-      if (profileSelectionIndex == serverHostID)
+      // Thread safe past this point
+      UpdateServerStatus(serverHostID, ServerStatus.Running);
+
+      if (Config.Profiles[profileSelectionIndex].ID == serverHostID)
       {
         btnStop.Enabled = true;
       }
@@ -200,6 +367,8 @@ namespace MinecraftServerLauncher
       }
 
       // may not need this for now ...
+      UpdatePlayerCount(serverHostID);
+
     }
 
     private void ServerHost_PlayerParted(int serverHostID, string playerName, string playerUUID, byte[] ip)
@@ -211,6 +380,8 @@ namespace MinecraftServerLauncher
       }
 
       // may not need this for now ...
+      UpdatePlayerCount(serverHostID);
+
     }
 
     private void ServerHost_ServerShuttingDown(int serverHostID)
@@ -221,8 +392,10 @@ namespace MinecraftServerLauncher
         return;
       }
 
-      //WARNING: This is assuming both lists are synchronized
-      if (profileSelectionIndex == serverHostID)
+      // Thread safe past this point
+      UpdateServerStatus(serverHostID, ServerStatus.Stopping);
+
+      if (Config.Profiles[profileSelectionIndex].ID == serverHostID)
       {
         btnStop.Enabled = false;
       }
@@ -236,12 +409,13 @@ namespace MinecraftServerLauncher
         return;
       }
 
-      //WARNING: This is assuming both lists are synchronized
-      if (profileSelectionIndex == serverHostID)
+      // Thread safe past this point
+      UpdateServerStatus(serverHostID, ServerStatus.Stopped);
+
+      if (Config.Profiles[profileSelectionIndex].ID == serverHostID)
       {
         btnStart.Enabled = true;
       }
-
     }
 
     private List<ServerHost> mvarServerHosts = new List<ServerHost>();
@@ -250,7 +424,7 @@ namespace MinecraftServerLauncher
     {
       for (int p = 0; p < Config.Count; p++)
       {
-        mvarServerHosts.Add(new ServerHost(p));
+        mvarServerHosts.Add(new ServerHost(Config.Profiles[p].ID));
         mvarServerHosts[p].ServerStarting += ServerHost_ServerStarting;
         mvarServerHosts[p].ConsoleChanged += ServerHost_ConsoleChanged;
         mvarServerHosts[p].ServerStarted += ServerHost_ServerStarted;
@@ -259,6 +433,7 @@ namespace MinecraftServerLauncher
         mvarServerHosts[p].ServerShuttingDown += ServerHost_ServerShuttingDown;
         mvarServerHosts[p].ServerStopped += ServerHost_ServerStopped;
         mvarServerHosts[p].ConfigureServer(Config.Profiles[p]);
+        //NOTE: The assignment of RCon port must be changed to avoid port conflicts!!
         mvarServerHosts[p].RemoteConsolePort = 25665 + p;
         mvarServerHosts[p].UseRandomizedRConPassword = true;
       }
@@ -286,17 +461,34 @@ namespace MinecraftServerLauncher
     {
       if (profileSelectionIndex > -1)
       {
-        ServerProfileConfigDialog dialog = new ServerProfileConfigDialog();
-        dialog.Profile = Config.Profiles[profileSelectionIndex];
-
-        if (dialog.ShowDialog(this) == DialogResult.OK)
+        int index = GetServerHostIndex(Config.Profiles[profileSelectionIndex].ID);
+        if (index > -1)
         {
-          Config.Profiles[profileSelectionIndex] = dialog.Profile;
-          Config.Save();
-          CheckServerProfiles();
-        }
+          if (mvarServerHosts[index].Running)
+          {
+            MessageBox.Show(
+              "\"" + Config.Profiles[profileSelectionIndex].Name + "\" is currently running!\n\nPlease shut down the server before changing the configuration.",
+              "Please shut down server!",
+              MessageBoxButtons.OK,
+              MessageBoxIcon.Exclamation
+              );
+          }
+          else
+          {
+            ServerProfileConfigDialog dialog = new ServerProfileConfigDialog();
+            dialog.Profile = Config.Profiles[profileSelectionIndex];
 
-        dialog.Dispose();
+            if (dialog.ShowDialog(this) == DialogResult.OK)
+            {
+              Config.Profiles[profileSelectionIndex] = dialog.Profile;
+              Config.Save();
+              CheckServerProfiles();
+            }
+
+            dialog.Dispose();
+          }
+
+        }
       }
     }
 
@@ -307,22 +499,27 @@ namespace MinecraftServerLauncher
 
     private void btnStart_Click(object sender, EventArgs e)
     {
-      //TODO: implement starting this server
       if (profileSelectionIndex > -1)
       {
-
-        mvarServerHosts[profileSelectionIndex].Start();
-        btnStart.Enabled = false;
+        int index = GetServerHostIndex(Config.Profiles[profileSelectionIndex].ID);
+        if (index > -1)
+        {
+          mvarServerHosts[index].Start();
+          btnStart.Enabled = false;
+        }
       }
     }
 
     private void btnStop_Click(object sender, EventArgs e)
     {
-      //TODO: implement stopping this server
-      if (profileSelectionIndex > -1 && mvarServerHosts[profileSelectionIndex].Running)
+      if (profileSelectionIndex > -1)
       {
-        mvarServerHosts[profileSelectionIndex].Stop();
-        btnStop.Enabled = false;
+        int index = GetServerHostIndex(Config.Profiles[profileSelectionIndex].ID);
+        if (index > -1 && mvarServerHosts[index].Running)
+        {
+          mvarServerHosts[index].Stop();
+          btnStop.Enabled = false;
+        }
       }
     }
 
@@ -339,6 +536,19 @@ namespace MinecraftServerLauncher
     private int profileHoverIndex = -1;
 
     private int profileSelectionIndex = -1;
+
+    private Bitmap StatusIconStopped = null;
+    private Bitmap StatusIconStarting = null;
+    private Bitmap StatusIconRunning = null;
+    private Bitmap StatusIconStopping = null;
+
+    private void InitializeStatusIcons()
+    {
+      StatusIconStopped = GetResourceImageByName("Stopped");
+      StatusIconStarting = GetResourceImageByName("Starting");
+      StatusIconRunning = GetResourceImageByName("Running");
+      StatusIconStopping = GetResourceImageByName("Stopping");
+    }
 
     private void DrawSelectionBox(Graphics gr, int x, int y, Color color)
     {
@@ -384,6 +594,7 @@ namespace MinecraftServerLauncher
         int y = ServerProfileMargin;
 
         Font nameFont = new Font(this.Font.FontFamily, 12.0f, FontStyle.Bold);
+        Font miscFont = new Font(this.Font.FontFamily, 10.5f, FontStyle.Regular);
 
         for (int p = 0; p < Config.Count; p++)
         {
@@ -406,8 +617,85 @@ namespace MinecraftServerLauncher
             e.Graphics.FillRectangle(Brushes.Black, new Rectangle(x, y, 64, 64));
           }
 
+          // Render the current server status icon
+          switch (Config.Profiles[p].Status)
+          {
+            case 0: // Stopped
+              if (StatusIconStopped != null)
+              {
+                e.Graphics.DrawImage(
+                  StatusIconStopped, 
+                  x + (ServerProfileMaximumWidth - StatusIconStopped.Width), 
+                  y + (64 - StatusIconStopped.Height)
+                  );
+              }
+              break;
+            case 1: // Starting
+              if (StatusIconStarting != null)
+              {
+                e.Graphics.DrawImage(
+                  StatusIconStarting,
+                  x + (ServerProfileMaximumWidth - StatusIconStarting.Width),
+                  y + (64 - StatusIconStarting.Height)
+                  );
+              }
+              break;
+            case 2: // Running
+              if (StatusIconRunning != null)
+              {
+                e.Graphics.DrawImage(
+                  StatusIconRunning,
+                  x + (ServerProfileMaximumWidth - StatusIconRunning.Width),
+                  y + (64 - StatusIconRunning.Height)
+                  );
+              }
+              break;
+            case 3: // Stopping
+              if (StatusIconStopping != null)
+              {
+                e.Graphics.DrawImage(
+                  StatusIconStopping,
+                  x + (ServerProfileMaximumWidth - StatusIconStopping.Width),
+                  y + (64 - StatusIconStopping.Height)
+                  );
+              }
+              break;
+          }
+
           // Next up: render some text...
-          e.Graphics.DrawString(Config.Profiles[p].Name, nameFont, Brushes.CornflowerBlue, (x + 64) + 10, y);
+          // First: the custom profile name
+          e.Graphics.DrawString(
+            Config.Profiles[p].Name, 
+            nameFont, 
+            Brushes.CornflowerBlue, 
+            (x + 64) + 10,
+            y
+            );
+
+          SizeF size = e.Graphics.MeasureString(Config.Profiles[p].Name, nameFont);
+
+          // Render the MOTD:
+          e.Graphics.DrawString(
+            Config.Profiles[p].MOTD,
+            miscFont,
+            new SolidBrush(Color.FromArgb(255, 224, 224, 224)),
+            (x + 64) + 12,
+            y + size.Height
+            );
+
+          // Render current player count / max player count
+          string playerInfo = Config.Profiles[p].PlayerCount.ToString() + " / " + Config.Profiles[p].MaxPlayers.ToString();
+          size = e.Graphics.MeasureString(playerInfo, miscFont);
+          e.Graphics.DrawString(playerInfo, miscFont, Brushes.White, x + (ServerProfileMaximumWidth - size.Width), y);
+
+          // Render the configured port number
+          e.Graphics.DrawString(
+            "Port: " + Config.Profiles[p].Port.ToString(), 
+            miscFont, 
+            new SolidBrush(Color.FromArgb(255, 224, 224, 224)),
+            (x + 64) + 12,
+            y + (64 - (size.Height + 1))
+            );
 
           y += 64 + (2 * ServerProfileMargin);
         }
@@ -472,6 +760,7 @@ namespace MinecraftServerLauncher
     public MainForm()
     {
       InitializeComponent();
+      InitializeStatusIcons();
 
       this.Shown += MainForm_Shown;
 
