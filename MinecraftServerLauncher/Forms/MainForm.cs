@@ -218,6 +218,8 @@ namespace MinecraftServerLauncher
         btnEdit.Enabled = true;
         btnRemove.Enabled = true;
 
+        btnSchedule.Enabled = true;
+
         //NOTE!! These need to be changed according to configuration instead of selection!!
         //WARNING: These lists may at some point become desyncd
 
@@ -239,6 +241,7 @@ namespace MinecraftServerLauncher
         btnEdit.Enabled = false;
         btnRemove.Enabled = false;
         btnStart.Enabled = false;
+        btnSchedule.Enabled = false;
         btnStop.Enabled = false;
       }
 
@@ -307,7 +310,59 @@ namespace MinecraftServerLauncher
     }
 
     #endregion
-    
+
+    #endregion
+
+    #region ===== Schedule Manager =====
+
+    private ScheduleManager RestartManager = new ScheduleManager();
+
+    #region Event: ScheduledBackup
+
+    private void RestartManager_ScheduledBackup(int serverHostID)
+    {
+      if (InvokeRequired)
+      {
+        Invoke(new Action<int>(RestartManager_ScheduledBackup), serverHostID);
+        return;
+      }
+
+      // Handle:
+      // Shutdown ...
+      // Do the backup
+      // Restart the server
+    }
+
+    #endregion
+
+    #region Event: ScheduledRestart
+
+    private void RestartManager_ScheduledRestart(int serverHostID)
+    {
+      if (InvokeRequired)
+      {
+        Invoke(new Action<int>(RestartManager_ScheduledRestart), serverHostID);
+        return;
+      }
+
+      // Handle:
+      // Shutdown
+      // Restart
+    }
+
+    #endregion
+
+    #region Method: InitializeRestartManager
+
+    private void InitializeRestartManager()
+    {
+      RestartManager.ScheduledBackup += RestartManager_ScheduledBackup;
+      RestartManager.ScheduledRestart += RestartManager_ScheduledRestart;
+    }
+
+
+    #endregion
+
     #endregion
 
     #region ===== ServerHost Events =====
@@ -443,6 +498,8 @@ namespace MinecraftServerLauncher
 
     #region ===== Control Events =====
 
+    #region Button: Add
+
     private void btnAdd_Click(object sender, EventArgs e)
     {
       ServerProfileConfigDialog dialog = new ServerProfileConfigDialog();
@@ -456,6 +513,16 @@ namespace MinecraftServerLauncher
 
       dialog.Dispose();
     }
+
+    private void btnAdd_Load(object sender, EventArgs e)
+    {
+      btnAdd.Text = "Add";
+      btnAdd.Click += btnAdd_Click;
+    }
+
+    #endregion
+
+    #region Button: Edit
 
     private void btnEdit_Click(object sender, EventArgs e)
     {
@@ -492,10 +559,30 @@ namespace MinecraftServerLauncher
       }
     }
 
+    private void btnEdit_Load(object sender, EventArgs e)
+    {
+      btnEdit.Text = "Edit";
+      btnEdit.Click += btnEdit_Click;
+    }
+
+    #endregion
+
+    #region Button: Remove
+
     private void btnRemove_Click(object sender, EventArgs e)
     {
-
+      //TODO: Add code to remove a server profile
     }
+
+    private void btnRemove_Load(object sender, EventArgs e)
+    {
+      btnRemove.Text = "Remove";
+      btnRemove.Click += btnRemove_Click;
+    }
+
+    #endregion
+
+    #region Button: Start
 
     private void btnStart_Click(object sender, EventArgs e)
     {
@@ -510,6 +597,31 @@ namespace MinecraftServerLauncher
       }
     }
 
+    private void btnStart_Load(object sender, EventArgs e)
+    {
+      btnStart.Text = "Start";
+      btnStart.Click += btnStart_Click;
+    }
+
+    #endregion
+
+    #region Button: Schedule
+
+    private void btnSchedule_Click(object sender, EventArgs e)
+    {
+      //TODO: add in schedule configuration ...
+    }
+
+    private void btnSchedule_Load(object sender, EventArgs e)
+    {
+      btnSchedule.Text = "Schedule";
+      btnSchedule.Click += btnSchedule_Click;
+    }
+
+    #endregion
+
+    #region Button: Stop
+
     private void btnStop_Click(object sender, EventArgs e)
     {
       if (profileSelectionIndex > -1)
@@ -522,6 +634,14 @@ namespace MinecraftServerLauncher
         }
       }
     }
+
+    private void btnStop_Load(object sender, EventArgs e)
+    {
+      btnStop.Text = "Stop";
+      btnStop.Click += btnStop_Click;
+    }
+
+    #endregion
 
     #endregion
 
@@ -719,6 +839,11 @@ namespace MinecraftServerLauncher
       SelectServerProfile(-1);
     }
 
+    private void MainForm_FormClosed(object sender, FormClosingEventArgs e)
+    {
+      RestartManager.Dispose();
+    }
+
     private void MainForm_MouseMove(object sender, MouseEventArgs e)
     {
       int hoverIndex = GetMouseProfileIndex(e);
@@ -761,8 +886,10 @@ namespace MinecraftServerLauncher
     {
       InitializeComponent();
       InitializeStatusIcons();
+      InitializeRestartManager();
 
       this.Shown += MainForm_Shown;
+      this.FormClosing += MainForm_FormClosed;
 
       this.MouseMove += MainForm_MouseMove;
       this.MouseClick += MainForm_MouseClick;
@@ -778,5 +905,7 @@ namespace MinecraftServerLauncher
 
     #endregion
 
+
   }
 }
+
