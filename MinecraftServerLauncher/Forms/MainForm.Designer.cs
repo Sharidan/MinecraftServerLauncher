@@ -103,6 +103,7 @@
       // 
       // btnSchedule
       // 
+      this.btnSchedule.Anchor = System.Windows.Forms.AnchorStyles.Bottom;
       this.btnSchedule.DisabledBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(96)))), ((int)(((byte)(96)))), ((int)(((byte)(96)))));
       this.btnSchedule.DisabledForeColor = System.Drawing.Color.Gray;
       this.btnSchedule.EnabledBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(224)))), ((int)(((byte)(224)))), ((int)(((byte)(224)))));

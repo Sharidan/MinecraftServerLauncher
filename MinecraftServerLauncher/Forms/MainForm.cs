@@ -610,6 +610,21 @@ namespace MinecraftServerLauncher
     private void btnSchedule_Click(object sender, EventArgs e)
     {
       //TODO: add in schedule configuration ...
+      if (profileSelectionIndex > -1)
+      {
+        int index = GetServerHostIndex(Config.Profiles[profileSelectionIndex].ID);
+        if (index > -1)
+        {
+          ScheduleDialog dialog = new ScheduleDialog();
+
+          dialog.SetMinecraftServerPath(Config.Profiles[profileSelectionIndex].Path);
+
+          dialog.ShowDialog(this);
+
+          dialog.Dispose();
+
+        }
+      }
     }
 
     private void btnSchedule_Load(object sender, EventArgs e)
