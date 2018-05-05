@@ -313,6 +313,69 @@ namespace MinecraftServerLauncher
 
     #endregion
 
+    #region ===== Backup Manager =====
+
+    private BackupManager Backups = new BackupManager();
+
+    #region Event: BackupStarting
+
+    private void Backups_BackupStarting(int serverHostID)
+    {
+      if (InvokeRequired)
+      {
+        Invoke(new Action<int>(Backups_BackupStarting), serverHostID);
+        return;
+      }
+
+      // ...
+
+    }
+
+    #endregion
+
+    #region Event: BackupCompleted
+
+    private void Backups_BackupCompleted(int serverHostID)
+    {
+      if (InvokeRequired)
+      {
+        Invoke(new Action<int>(Backups_BackupCompleted), serverHostID);
+        return;
+      }
+
+
+    }
+
+    #endregion
+
+    #region Event: BackupFailed
+
+    private void Backups_BackupFailed(int serverHostID)
+    {
+      if (InvokeRequired)
+      {
+        Invoke(new Action<int>(Backups_BackupFailed), serverHostID);
+        return;
+      }
+
+
+    }
+
+    #endregion
+
+    #region Method: InitializeBackups
+
+    private void InitializeBackups()
+    {
+      Backups.BackupStarting += Backups_BackupStarting;
+      Backups.BackupCompleted += Backups_BackupCompleted;
+      Backups.BackupFailed += Backups_BackupFailed;
+    }
+
+    #endregion
+
+    #endregion
+
     #region ===== Schedule Manager =====
 
     private ScheduleManager RestartManager = new ScheduleManager();
@@ -360,6 +423,29 @@ namespace MinecraftServerLauncher
       RestartManager.ScheduledRestart += RestartManager_ScheduledRestart;
     }
 
+
+    #endregion
+
+    #region Method: UpdateRestartManager
+
+    private void UpdateRestartManager()
+    {
+      // Start by clearing the ScheduleManager
+      RestartManager.Clear();
+      // Then loop through all server profiles and add all schedules to the ScheduleManager
+      for (int p = 0; p < Config.Profiles.Count; p++)
+      {
+        for (int s = 0; s < Config.Profiles[p].Schedules.Length; s++)
+        {
+          RestartManager.Add(
+            Config.Profiles[p].ID, // The ServerHostID
+            Config.Profiles[p].Schedules[s].EventHour, // The hour at which to trigger 
+            Config.Profiles[p].Schedules[s].EventMinute, // The minute at which to trigger
+            Config.Profiles[p].Schedules[s].Backup // Whether it's a backup event or a restart event
+            );
+        }
+      }
+    }
 
     #endregion
 
@@ -524,6 +610,19 @@ namespace MinecraftServerLauncher
 
     #region Button: Edit
 
+    /* 
+     * A bug found its way into the Edit button, which prevented the ServerProfileConfigDialog
+     * from being shown a second time after the Accept button was clicked in the dialog while
+     * editing an existing server profile. Debugging showed that the ID number of the server
+     * profile got reset back to -1 somewhere in the ServerProfileConfigDialog.
+     * 
+     * The fix for this bug was fairly simple.
+     * More information can be found in:
+     * Form: ServerProfileConfigDialog
+     * Method: btnAccept_Click
+     * 
+     */
+
     private void btnEdit_Click(object sender, EventArgs e)
     {
       if (profileSelectionIndex > -1)
@@ -547,6 +646,7 @@ namespace MinecraftServerLauncher
 
             if (dialog.ShowDialog(this) == DialogResult.OK)
             {
+              Debug.WriteLine("ID for edited profile: " + dialog.Profile.ID.ToString());
               Config.Profiles[profileSelectionIndex] = dialog.Profile;
               Config.Save();
               CheckServerProfiles();
@@ -572,6 +672,29 @@ namespace MinecraftServerLauncher
     private void btnRemove_Click(object sender, EventArgs e)
     {
       //TODO: Add code to remove a server profile
+      if (profileSelectionIndex > -1)
+      {
+        string msg = "";
+
+        msg += "You are about to remove the server profile named:\n\n";
+        msg += "\"" + Config.Profiles[profileSelectionIndex].Name + "\"\n\n";
+        msg += "Are you sure you wish to remove this server profile?";
+
+        if (MessageBox.Show(
+          msg,
+          "Remote server profile?",
+          MessageBoxButtons.YesNo,
+          MessageBoxIcon.Question
+          ) == DialogResult.Yes)
+        {
+          // Remove the server profile that was selected
+          Config.Profiles.RemoveAt(profileSelectionIndex);
+          // Force a save to disk
+          Config.Save(true);
+          // Force an update of the UI, by invalidating the current drawn version of the UI
+          Invalidate();
+        }
+      }
     }
 
     private void btnRemove_Load(object sender, EventArgs e)
@@ -609,7 +732,6 @@ namespace MinecraftServerLauncher
 
     private void btnSchedule_Click(object sender, EventArgs e)
     {
-      //TODO: add in schedule configuration ...
       if (profileSelectionIndex > -1)
       {
         int index = GetServerHostIndex(Config.Profiles[profileSelectionIndex].ID);
@@ -618,11 +740,21 @@ namespace MinecraftServerLauncher
           ScheduleDialog dialog = new ScheduleDialog();
 
           dialog.SetMinecraftServerPath(Config.Profiles[profileSelectionIndex].Path);
+          // Pass the existing schedules to the dialog
+          dialog.ScheduleProfiles = Config.Profiles[profileSelectionIndex].Schedules;
 
           dialog.ShowDialog(this);
 
+          // Retrieve the schedules from the dialog
+          ServerProfile profile = Config.Profiles[profileSelectionIndex];
+          profile.Schedules = dialog.ScheduleProfiles;
+          Config.Profiles[profileSelectionIndex] = profile;
+
+          Config.Save(true);
+
           dialog.Dispose();
 
+          UpdateRestartManager();
         }
       }
     }
@@ -852,10 +984,13 @@ namespace MinecraftServerLauncher
     private void MainForm_Shown(object sender, EventArgs e)
     {
       SelectServerProfile(-1);
+
+      UpdateRestartManager();
     }
 
     private void MainForm_FormClosed(object sender, FormClosingEventArgs e)
     {
+      Backups.Dispose();
       RestartManager.Dispose();
     }
 
@@ -901,6 +1036,7 @@ namespace MinecraftServerLauncher
     {
       InitializeComponent();
       InitializeStatusIcons();
+      InitializeBackups();
       InitializeRestartManager();
 
       this.Shown += MainForm_Shown;

@@ -41,6 +41,7 @@
       this.btnCancel = new System.Windows.Forms.Button();
       this.btnProperties = new System.Windows.Forms.Button();
       this.label5 = new System.Windows.Forms.Label();
+      this.chkAutoStart = new System.Windows.Forms.CheckBox();
       ((System.ComponentModel.ISupportInitialize)(this.nudMemory)).BeginInit();
       this.SuspendLayout();
       // 
@@ -191,6 +192,17 @@
       this.label5.TabIndex = 12;
       this.label5.Text = "Server config:";
       // 
+      // chkAutoStart
+      // 
+      this.chkAutoStart.AutoSize = true;
+      this.chkAutoStart.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(224)))), ((int)(((byte)(224)))), ((int)(((byte)(224)))));
+      this.chkAutoStart.Location = new System.Drawing.Point(93, 112);
+      this.chkAutoStart.Name = "chkAutoStart";
+      this.chkAutoStart.Size = new System.Drawing.Size(125, 17);
+      this.chkAutoStart.TabIndex = 13;
+      this.chkAutoStart.Text = "Auto-start this server.";
+      this.chkAutoStart.UseVisualStyleBackColor = true;
+      // 
       // ServerProfileConfigDialog
       // 
       this.AcceptButton = this.btnAccept;
@@ -199,6 +211,7 @@
       this.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(64)))), ((int)(((byte)(64)))), ((int)(((byte)(64)))));
       this.CancelButton = this.btnCancel;
       this.ClientSize = new System.Drawing.Size(509, 241);
+      this.Controls.Add(this.chkAutoStart);
       this.Controls.Add(this.label5);
       this.Controls.Add(this.btnProperties);
       this.Controls.Add(this.btnCancel);
@@ -240,5 +253,6 @@
     private System.Windows.Forms.Button btnCancel;
     private System.Windows.Forms.Button btnProperties;
     private System.Windows.Forms.Label label5;
+    private System.Windows.Forms.CheckBox chkAutoStart;
   }
 }

@@ -26,7 +26,23 @@ namespace MinecraftServerLauncher
     #region ===== Internal Helper Methods =====
 
     private string LastOpenPath = "";
-    
+
+    #region Method: ArrayRemove
+
+    private void ArrayRemove<T>(ref T[] array, int RemoveIndex)
+    {
+      if (RemoveIndex >= 0 && RemoveIndex < array.Length)
+      {
+        T[] Temp = new T[array.Length - 1];
+        Array.Copy(array, 0, Temp, 0, RemoveIndex);
+        Array.Copy(array, RemoveIndex + 1, Temp, RemoveIndex, array.Length - RemoveIndex - 1);
+        array = new T[Temp.Length];
+        Array.Copy(Temp, 0, array, 0, Temp.Length);
+      }
+    }
+
+    #endregion
+
     #region Method: PadZero
 
     private string PadZero(int value)
@@ -410,7 +426,41 @@ namespace MinecraftServerLauncher
 
     private void btnRemove_Click(object sender, EventArgs e)
     {
+      if (lstSchedules.SelectedIndex > -1)
+      {
+        string msg = "";
 
+        msg += "You are about to remove the ";
+        if (mvarScheduleProfiles[lstSchedules.SelectedIndex].Backup)
+        {
+          msg += "backup";
+        }
+        else
+        {
+          msg += "restart";
+        }
+        msg += " schedule for ";
+        msg += PadZero(mvarScheduleProfiles[lstSchedules.SelectedIndex].EventHour) + ":" + PadZero(mvarScheduleProfiles[lstSchedules.SelectedIndex].EventMinute);
+        msg += " !\n\n";
+        msg += "Are you sure you wish to remove this schedule?";
+
+        if (MessageBox.Show(
+          msg,
+          "Remove this schedule?",
+          MessageBoxButtons.YesNo,
+          MessageBoxIcon.Question
+          ) == DialogResult.Yes)
+        {
+          // Remove the selected schedule from the list
+          ArrayRemove(ref mvarScheduleProfiles, lstSchedules.SelectedIndex);
+
+          lstSchedules.SelectedIndex = -1;
+
+          PopulateScheduleListBox();
+
+          CloseScheduleEditor();
+        }
+      }
     }
 
     private void btnCancel_Click(object sender, EventArgs e)

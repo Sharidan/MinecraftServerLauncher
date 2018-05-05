@@ -49,6 +49,8 @@ namespace CSharpLibs.Minecraft
 
     #region ===== Internal Helper Methods =====
 
+    #region Method: FixInt
+
     /// <summary>
     /// Converts the passed string into an int value.
     /// </summary>
@@ -65,6 +67,23 @@ namespace CSharpLibs.Minecraft
 
       return result;
     }
+
+    #endregion
+
+    #region Method: PadZero
+
+    private string PadZero(int value)
+    {
+      string result = value.ToString();
+      if (result.Length == 1)
+      {
+        result = "0" + result;
+      }
+
+      return result;
+    }
+
+    #endregion
 
     #endregion
 
@@ -88,8 +107,79 @@ namespace CSharpLibs.Minecraft
         string serverPath = configINI.GetValue("Profile" + p.ToString(), "ServerPath");
         string serverJar = configINI.GetValue("Profile" + p.ToString(), "ServerJar");
         int memory = FixInt(configINI.GetValue("Profile" + p.ToString(), "Memory"));
+        string startupMode = configINI.GetValue("Profile" + p.ToString(), "StartupMode").Trim().ToLower();
+        bool autoStart = false;
 
-        mvarProfiles.Add(new ServerProfile(name, serverPath, serverJar, memory));
+        if (startupMode.Length > 0 && startupMode[0] == 'a')
+        {
+          autoStart = true;
+        }
+
+        ServerProfile profile = new ServerProfile(name, serverPath, serverJar, memory, autoStart);
+
+        int scheduleCount = FixInt(configINI.GetValue("Schedule" + p.ToString(), "Count"));
+        if (scheduleCount > 0)
+        {
+          for (int s = 0; s < scheduleCount; s++)
+          {
+            string timeStamp = configINI.GetValue("Schedule" + p.ToString(), "Time" + s.ToString());
+            // Is this time stamp valid?
+            if (timeStamp.Length == 5 && timeStamp[2] == ':')
+            {
+              string[] parts = timeStamp.Split(':');
+              if (parts.Length == 2)
+              {
+                int h = FixInt(parts[0]);
+                int m = FixInt(parts[1]);
+                if (h >= 0 && h < 24)
+                {
+                  if (m == 0 || m == 15 || m == 30 || m == 45)
+                  {
+                    // When we reach this point, we have a valid time for the schedule
+                    string scheduleType = configINI.GetValue("Schedule" + p.ToString(), "Type" + s.ToString()).Trim().ToLower();
+                    string backupPath = "";
+
+                    if (scheduleType.Length > 0 && scheduleType[0] == 'b')
+                    { // If the schedule type starts with a 'b', we assume it's a backup schedule
+                      backupPath = configINI.GetValue("Schedule" + p.ToString(), "Path" + s.ToString()).Trim();
+                      if (backupPath.Length > 0 && backupPath[1] == ':')
+                      {
+                        // Set the schedule type to backup, since we got a potentially valid path
+                        scheduleType = "backup";
+                      }
+                      else
+                      {
+                        // The stored path doesnt seem to be useful, so
+                        // ... we'll default back to a restart schedule
+                        scheduleType = "restart";
+                      }
+                    }
+                    else
+                    { // Otherwise we'll force a restart schedule
+                      scheduleType = "restart";
+                    }
+
+                    // Finally store the schedule data ...
+                    Array.Resize(ref profile.Schedules, profile.Schedules.Length + 1);
+
+                    // 
+                    switch (scheduleType)
+                    {
+                      case "backup":
+                        profile.Schedules[profile.Schedules.Length - 1] = new ScheduleProfile(-1, h, m, backupPath);
+                        break;
+                      case "restart":
+                        profile.Schedules[profile.Schedules.Length - 1] = new ScheduleProfile(-1, h, m);
+                        break;
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+
+        mvarProfiles.Add(profile);
       }
 
       Changed = false;
@@ -115,6 +205,36 @@ namespace CSharpLibs.Minecraft
         configINI.SetValue("Profile" + p.ToString(), "ServerPath", mvarProfiles[p].Path);
         configINI.SetValue("Profile" + p.ToString(), "ServerJar", mvarProfiles[p].Jar);
         configINI.SetValue("Profile" + p.ToString(), "Memory", mvarProfiles[p].MemorySize.ToString());
+        if (mvarProfiles[p].AutoStart)
+        {
+          configINI.SetValue("Profile" + p.ToString(), "StartupMode", "auto");
+        }
+        else
+        {
+          configINI.SetValue("Profile" + p.ToString(), "StartupMode", "manual");
+        }
+
+        // Save the schedules for this server profile
+        // Start by removing the schedule group
+        configINI.RemoveGroup("Schedule" + p.ToString());
+        // Then add in the current schedule list, if it exists
+        configINI.SetValue("Schedule" + p.ToString(), "Count", mvarProfiles[p].Schedules.Length.ToString());
+
+        for (int s = 0; s < mvarProfiles[p].Schedules.Length; s++)
+        {
+          // Write the schedule time: Time0=04:30
+          configINI.SetValue("Schedule" + p.ToString(), "Time" + s.ToString(), PadZero(mvarProfiles[p].Schedules[s].EventHour) + ":" + PadZero(mvarProfiles[p].Schedules[s].EventMinute));
+          // Write the schedule type
+          if (mvarProfiles[p].Schedules[s].Backup)
+          {
+            configINI.SetValue("Schedule" + p.ToString(), "Type" + s.ToString(), "backup");
+            configINI.SetValue("Schedule" + p.ToString(), "Path" + s.ToString(), mvarProfiles[p].Schedules[s].BackupPath);
+          }
+          else
+          {
+            configINI.SetValue("Schedule" + p.ToString(), "Type" + s.ToString(), "restart");
+          }
+        }
       }
 
       configINI.Save(fileName);
@@ -233,6 +353,18 @@ namespace CSharpLibs.Minecraft
     public void Save()
     {
       if (Changed)
+      {
+        SaveConfig();
+      }
+    }
+
+    /// <summary>
+    /// Saves any changes made to the server profiles list or forces a save to disk.
+    /// </summary>
+    /// <param name="forceSave">Whether to force a save to disk.</param>
+    public void Save(bool forceSave)
+    {
+      if (Changed || forceSave)
       {
         SaveConfig();
       }

@@ -92,11 +92,13 @@ namespace MinecraftServerLauncher
 
     #region ===== Properties =====
 
-    public ServerProfile Profile { get; set; } = new ServerProfile("", "", "", 256);
+    public ServerProfile Profile { get; set; } = new ServerProfile("", "", "", 256, false);
 
     #endregion
 
     #region ===== Control Events =====
+
+    #region Button: Select
 
     private void btnSelect_Click(object sender, EventArgs e)
     {
@@ -117,6 +119,10 @@ namespace MinecraftServerLauncher
       dialog.Dispose();
     }
 
+    #endregion
+
+    #region Button: Properties
+
     private void btnProperties_Click(object sender, EventArgs e)
     {
       if (txtServerPath.Text.Trim().Length > 0 && txtServerJar.Text.Trim().Length > 0)
@@ -128,6 +134,22 @@ namespace MinecraftServerLauncher
       }
     }
 
+    #endregion
+
+    #region Button: Accept
+
+    /* 
+     * The bug was caused by the Profile property being overwritten with a brand new
+     * instance of the ServerProfile struct, when the accept button is clicked.
+     * This causes the .ID value to be forced to -1 indicating no ID has been assigned.
+     * 
+     * To fix the bug, a new constructor was added to the ServerProfile struct which
+     * also accepts an ID number. The previous .ID of the Profile property is then
+     * saved and passed to the constructor when overwriting the Profile property
+     * with the new data.
+     * 
+     */
+
     private void btnAccept_Click(object sender, EventArgs e)
     {
       if (
@@ -136,12 +158,16 @@ namespace MinecraftServerLauncher
         txtServerJar.Text.Trim().Length > 0
         )
       {
+        // Bug-fix: save the .ID value
+        int previousID = Profile.ID;
         // Store the settings as a ServerProfile
         Profile = new ServerProfile(
+          previousID,
           txtServerName.Text.Trim(),
           txtServerPath.Text.Trim(),
           txtServerJar.Text.Trim(),
-          (int)nudMemory.Value
+          (int)nudMemory.Value,
+          chkAutoStart.Checked
           );
 
         // Check whether the eula.txt file exists
@@ -174,10 +200,16 @@ namespace MinecraftServerLauncher
       }
     }
 
+    #endregion
+
+    #region Button: Cancel
+
     private void btnCancel_Click(object sender, EventArgs e)
     {
       this.DialogResult = DialogResult.Cancel;
     }
+
+    #endregion
 
     #endregion
 
@@ -197,6 +229,8 @@ namespace MinecraftServerLauncher
       txtServerJar.Text = Profile.Jar;
 
       nudMemory.Value = Profile.MemorySize;
+
+      chkAutoStart.Checked = Profile.AutoStart;
     }
 
     #endregion

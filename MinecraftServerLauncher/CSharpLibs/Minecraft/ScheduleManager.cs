@@ -97,59 +97,62 @@ namespace CSharpLibs.Minecraft
         int currentMinute = DateTime.Now.Minute;
         int currentSecond = DateTime.Now.Second;
 
-        // Loop through all the schedule entries, to see if one matches
-        for (int s = 0; s < mvarSchedules.Length; s++)
+        lock (mvarSchedules)
         {
-          if (mvarSchedules[s].EventHour == currentHour && mvarSchedules[s].EventMinute == currentMinute)
+          // Loop through all the schedule entries, to see if one matches
+          for (int s = 0; s < mvarSchedules.Length; s++)
           {
-            // We've found (at least) one that matches - check the seconds...
-            if (mvarSchedules[s].EventSecond == currentSecond)
+            if (mvarSchedules[s].EventHour == currentHour && mvarSchedules[s].EventMinute == currentMinute)
             {
-              // This is some kind of event we have to handle
-              // So ... is this a backup/restart event? or a reset thingie?
-              if (mvarSchedules[s].ResetIndex == -1)
+              // We've found (at least) one that matches - check the seconds...
+              if (mvarSchedules[s].EventSecond == currentSecond)
               {
-                // Might be an event we have to raise ...
-                if (!mvarSchedules[s].Triggered)
+                // This is some kind of event we have to handle
+                // So ... is this a backup/restart event? or a reset thingie?
+                if (mvarSchedules[s].ResetIndex == -1)
                 {
-                  mvarSchedules[s].Triggered = true;
-                  switch (mvarSchedules[s].Backup)
+                  // Might be an event we have to raise ...
+                  if (!mvarSchedules[s].Triggered)
                   {
-                    case true:
-                      OnScheduledBackup(mvarSchedules[s].ServerHostID);
-                      break;
-                    default:
-                      OnScheduledRestart(mvarSchedules[s].ServerHostID);
-                      break;
-                  }
-                }
-              }
-              else
-              {
-                int resetIndex = mvarSchedules[s].ResetIndex;
-
-                // Ensure that we have a valid schedule entry index
-                if (resetIndex >= 0 && resetIndex < mvarSchedules.Length)
-                {
-                  // Check that the two schedule entry profiles match (ignoring the seconds!)
-                  if (
-                    mvarSchedules[resetIndex].ServerHostID == mvarSchedules[s].ServerHostID &&
-                    mvarSchedules[resetIndex].EventHour == mvarSchedules[s].EventHour &&
-                    mvarSchedules[resetIndex].EventMinute == mvarSchedules[s].EventMinute &&
-                    mvarSchedules[resetIndex].Backup == mvarSchedules[s].Backup
-                    )
-                  {
-                    // Was this event triggered
-                    if (mvarSchedules[resetIndex].Triggered)
-                    { // Yes: reset it
-                      mvarSchedules[resetIndex].Triggered = false;
+                    mvarSchedules[s].Triggered = true;
+                    switch (mvarSchedules[s].Backup)
+                    {
+                      case true:
+                        OnScheduledBackup(mvarSchedules[s].ServerHostID);
+                        break;
+                      default:
+                        OnScheduledRestart(mvarSchedules[s].ServerHostID);
+                        break;
                     }
                   }
+                }
+                else
+                {
+                  int resetIndex = mvarSchedules[s].ResetIndex;
+
+                  // Ensure that we have a valid schedule entry index
+                  if (resetIndex >= 0 && resetIndex < mvarSchedules.Length)
+                  {
+                    // Check that the two schedule entry profiles match (ignoring the seconds!)
+                    if (
+                      mvarSchedules[resetIndex].ServerHostID == mvarSchedules[s].ServerHostID &&
+                      mvarSchedules[resetIndex].EventHour == mvarSchedules[s].EventHour &&
+                      mvarSchedules[resetIndex].EventMinute == mvarSchedules[s].EventMinute &&
+                      mvarSchedules[resetIndex].Backup == mvarSchedules[s].Backup
+                      )
+                    {
+                      // Was this event triggered
+                      if (mvarSchedules[resetIndex].Triggered)
+                      { // Yes: reset it
+                        mvarSchedules[resetIndex].Triggered = false;
+                      }
+                    }
+
+                  }
 
                 }
 
               }
-
             }
           }
         }
@@ -193,32 +196,46 @@ namespace CSharpLibs.Minecraft
 
     public void Add(int serverHostID, int hour, int minute, bool backup)
     {
-      int index = -1;
-
-      for (int s = 0; s < mvarSchedules.Length; s++)
+      lock (mvarSchedules)
       {
-        if (
-          mvarSchedules[s].ResetIndex == -1 && 
-          mvarSchedules[s].ServerHostID == serverHostID && 
-          mvarSchedules[s].EventHour == hour && 
-          mvarSchedules[s].EventMinute == minute && 
-          mvarSchedules[s].Backup == backup
-          )
+        int index = -1;
+
+        for (int s = 0; s < mvarSchedules.Length; s++)
         {
-          index = s;
-          break;
+          if (
+            mvarSchedules[s].ResetIndex == -1 &&
+            mvarSchedules[s].ServerHostID == serverHostID &&
+            mvarSchedules[s].EventHour == hour &&
+            mvarSchedules[s].EventMinute == minute &&
+            mvarSchedules[s].Backup == backup
+            )
+          {
+            index = s;
+            break;
+          }
+        }
+
+        if (index == -1)
+        {
+          Array.Resize(ref mvarSchedules, mvarSchedules.Length + 1);
+          mvarSchedules[mvarSchedules.Length - 1] = new ScheduleEntry(serverHostID, hour, minute, backup);
+          int resetIndex = mvarSchedules.Length - 1;
+          Array.Resize(ref mvarSchedules, mvarSchedules.Length + 1);
+          mvarSchedules[mvarSchedules.Length - 1] = new ScheduleEntry(serverHostID, hour, minute, backup, resetIndex);
         }
       }
+    }
 
-      if (index == -1)
+    #endregion
+
+    #region Method: Clear
+
+    public void Clear()
+    {
+      lock (mvarSchedules)
       {
-        Array.Resize(ref mvarSchedules, mvarSchedules.Length + 1);
-        mvarSchedules[mvarSchedules.Length - 1] = new ScheduleEntry(serverHostID, hour, minute, backup);
-        int resetIndex = mvarSchedules.Length - 1;
-        Array.Resize(ref mvarSchedules, mvarSchedules.Length + 1);
-        mvarSchedules[mvarSchedules.Length - 1] = new ScheduleEntry(serverHostID, hour, minute, backup, resetIndex);
+        mvarSchedules = new ScheduleEntry[0];
       }
-
     }
 
     #endregion
