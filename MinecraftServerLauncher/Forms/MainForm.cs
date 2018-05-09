@@ -302,6 +302,10 @@ namespace MinecraftServerLauncher
         {
           ServerProfile profile = Config.Profiles[serverProfileIndex];
           profile.Status = (byte)newStatus;
+          if (newStatus == ServerStatus.Stopping)
+          {
+            profile.PlayerCount = 0;
+          }
           Config.Profiles[serverProfileIndex] = profile;
           // Force an update of the UI
           Invalidate();
@@ -646,7 +650,6 @@ namespace MinecraftServerLauncher
 
             if (dialog.ShowDialog(this) == DialogResult.OK)
             {
-              Debug.WriteLine("ID for edited profile: " + dialog.Profile.ID.ToString());
               Config.Profiles[profileSelectionIndex] = dialog.Profile;
               Config.Save();
               CheckServerProfiles();
@@ -1054,9 +1057,31 @@ namespace MinecraftServerLauncher
         );
     }
 
+
     #endregion
 
+    private void button1_Click(object sender, EventArgs e)
+    {
+      string testMessage = "&7[&9Server&7] &eScheduled server restart in &c10&e minutes!";
 
+      Debug.WriteLine("Test message: " + testMessage);
+      Debug.WriteLine(ChatConverter.ToMOTD(testMessage));
+      Debug.WriteLine(ChatConverter.ToJSON(testMessage));
+
+      if (profileSelectionIndex > -1)
+      {
+        int index = GetServerHostIndex(Config.Profiles[profileSelectionIndex].ID);
+        if (index > -1)
+        {
+          if (mvarServerHosts[index].AnnouncePrompt.Length == 0)
+          {
+            mvarServerHosts[index].AnnouncePrompt = "&7[&9Server&7]";
+          }
+          mvarServerHosts[index].Announce("&eScheduled server restart in &c10&e minutes!");
+        }
+      }
+
+    }
   }
 }
 

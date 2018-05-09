@@ -47,6 +47,7 @@
   <ItemGroup>
     <Compile Include="CSharpLibs\ConfigTools\INIFile.cs" />
     <Compile Include="CSharpLibs\Minecraft\BackupManager.cs" />
+    <Compile Include="CSharpLibs\Minecraft\ChatConverter.cs" />
     <Compile Include="CSharpLibs\Minecraft\PlayerProfile.cs" />
     <Compile Include="CSharpLibs\Minecraft\ScheduleManager.cs" />
     <Compile Include="CSharpLibs\Minecraft\ScheduleProfile.cs" />
@@ -54,6 +55,12 @@
     <Compile Include="CSharpLibs\Minecraft\ServerProfile.cs" />
     <Compile Include="CSharpLibs\Minecraft\ServerProfileConfig.cs" />
     <Compile Include="CSharpLibs\Networking\SourceRemoteConsole.cs" />
+    <Compile Include="Forms\Dialogs\CustomTextDialog.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Forms\Dialogs\CustomTextDialog.Designer.cs">
+      <DependentUpon>CustomTextDialog.cs</DependentUpon>
+    </Compile>
     <Compile Include="Forms\MainForm.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -86,6 +93,9 @@
     <Compile Include="UserControls\FlatButton\FlatButton.Designer.cs">
       <DependentUpon>FlatButton.cs</DependentUpon>
     </Compile>
+    <EmbeddedResource Include="Forms\Dialogs\CustomTextDialog.resx">
+      <DependentUpon>CustomTextDialog.cs</DependentUpon>
+    </EmbeddedResource>
     <EmbeddedResource Include="Forms\Dialogs\ServerProfileConfigDialog.resx">
       <DependentUpon>ServerProfileConfigDialog.cs</DependentUpon>
     </EmbeddedResource>

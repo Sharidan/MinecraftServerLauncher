@@ -304,6 +304,8 @@ namespace CSharpLibs.Minecraft
 
     SourceRemoteConsole RCon = new SourceRemoteConsole();
 
+    private bool StopTriggered = false;
+
     /// <summary>
     /// The current password in use for remote console.
     /// </summary>
@@ -317,6 +319,12 @@ namespace CSharpLibs.Minecraft
     private void RCon_ConnectFailed(Exception ex)
     {
       //TODO: maybe ?
+      if (!StopTriggered)
+      {
+        // Something prevented us from connecting to the minecraft server
+        // and no stop was ordered, so we'll attempt to reconnect again...
+        ReconnectRCon();
+      }
     }
 
     private void RCon_Authenticated()
@@ -339,6 +347,16 @@ namespace CSharpLibs.Minecraft
     private void RCon_Disconnected()
     {
       //TODO: Handle other clean up as needed
+      if (!StopTriggered)
+      {
+        // .Stop was not called, so the server must have thrown us
+        // Let's try to reconnect...
+        ReconnectRCon();
+      }
+      else
+      {
+        StopTriggered = false;
+      }
     }
 
     private void InitializeRCon()
@@ -352,6 +370,14 @@ namespace CSharpLibs.Minecraft
       RCon.ServerResponse += RCon_ServerResponse;
 
       RCon.Disconnected += RCon_Disconnected;
+    }
+
+    private void ReconnectRCon()
+    {
+      Debug.WriteLine("Reconnecting RCon ...");
+      Thread.Sleep(50);
+      Debug.WriteLine("RCon: connect to localhost again ...");
+      RCon.Connect(new byte[] { 127, 0, 0, 1 }, mvarRemoteConsolePort, RConPassword);
     }
 
     #endregion
@@ -676,6 +702,39 @@ namespace CSharpLibs.Minecraft
     /// </summary>
     private bool Locked = false;
 
+    #region Property: AnnouncePrompt
+
+    private string AnnouncePromptJSON = "";
+
+    private string mvarAnnouncePrompt = "";
+
+    public string AnnouncePrompt
+    {
+      get { return mvarAnnouncePrompt; }
+      set
+      {
+        mvarAnnouncePrompt = value;
+        if (mvarAnnouncePrompt.Trim().Length > 0)
+        {
+          // If no trailing space is found, add it to the JSON copy of this
+          if (mvarAnnouncePrompt[mvarAnnouncePrompt.Length - 1] != ' ')
+          {
+            AnnouncePromptJSON = ChatConverter.ToJSON(mvarAnnouncePrompt + " ");
+          }
+          else
+          {
+            AnnouncePromptJSON = ChatConverter.ToJSON(mvarAnnouncePrompt);
+          }
+        }
+        else
+        {
+          AnnouncePromptJSON = "";
+        }
+      }
+    }
+
+    #endregion
+
     #region Property: ID
 
     private int mvarID = -1;
@@ -888,6 +947,45 @@ namespace CSharpLibs.Minecraft
 
     #region ===== Public Method =====
 
+    #region Public Method: Announce
+
+    public void Announce(string customChatMessage)
+    {
+      if (Running)
+      {
+        if (RCon.IsConnected)
+        {
+          if (customChatMessage.Trim().Length > 0)
+          {
+            string command = "";
+            string message = "";
+
+            message = ChatConverter.ToJSON(customChatMessage);
+
+            // Prefix with the /tellraw server command:
+            command += "tellraw ";
+            // Target everyone currently on server:
+            command += "@a ";
+            // Fetch the chat elements in json format for the chat:
+            if (AnnouncePromptJSON.Length > 0)
+            {
+              // Merge the prompt with the message ...
+              command += ChatConverter.MergeJSON(AnnouncePromptJSON, message);
+            }
+            else
+            { // No prompt defined, so just add the message
+              command += message;
+            }
+
+            // Finally: attempt to execute this command on the server:
+            RCon.Execute(command);
+          }
+        }
+      }
+    }
+
+    #endregion
+
     #region Public Method: ConfigureServer
 
     /// <summary>
@@ -987,6 +1085,7 @@ namespace CSharpLibs.Minecraft
       {
         if (RCon.IsConnected)
         {
+          StopTriggered = true;
           RCon.Execute("stop");
         }
       }
