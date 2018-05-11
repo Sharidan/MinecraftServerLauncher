@@ -87,7 +87,7 @@ namespace CSharpLibs.Minecraft
 
     private const string ControlSymbols = "&§";
 
-    private const string ControlCodes = "0123456789abcdef";
+    private const string ControlCodes = "0123456789abcdefklmnor";
 
     #region ===== Internal Helper Methods =====
 
@@ -169,6 +169,47 @@ namespace CSharpLibs.Minecraft
 
     #endregion
 
+    #region Method: GetJSONFlag
+
+    private static string GetJSONFlag(string name, bool value)
+    {
+      string result = "";
+
+      result += "\"" + name + "\":";
+
+      if (value)
+      {
+        result += "true";
+      }
+      else
+      {
+        result += "false";
+      }
+
+      return result;
+    }
+
+    #endregion
+
+    #region Method: GetJSONFormatName
+
+    private static string GetJSONFormatName(char controlCode)
+    {
+      switch (controlCode)
+      {
+        case 'k': return "obfuscated";
+        case 'l': return "bold";
+        case 'm': return "strikethrough";
+        case 'n': return "underlined";
+        case 'o': return "italic";
+        case 'r': return "reset";
+      }
+
+      return "none";
+    }
+
+    #endregion
+
     #region Method: HasControlTags
 
     /// <summary>
@@ -229,20 +270,21 @@ namespace CSharpLibs.Minecraft
 
     #endregion
 
-    #region Method: ToJSON
+    #region Method: ToElements
 
-    public static string ToJSON(string chatText)
+    public static ChatElement[] ToElements(string chatText)
     {
       if (HasControlTags(chatText))
       {
+        ChatElement[] result = new ChatElement[0];
+        ChatElement element = new ChatElement("", "none");
         string motd = ConvertToMOTD(chatText);
         // This is what we get:
         // §aSharidan§f'§2s §6Vanilla §71§8.§712§8.§72
+        // §aSharidan§f'§2s §6§nVanilla§r §71§8.§712§8.§72
         // Keep in mind, that the above might contain § that should be rendered as actual text, not a control symbol
+        // Split the above string into its individual parts
         string[] parts = motd.Split('§');
-        string result = "";
-
-        result += "[";
 
         for (int p = 0; p < parts.Length; p++)
         {
@@ -250,51 +292,185 @@ namespace CSharpLibs.Minecraft
 
           if (part.Length > 0)
           {
-            string colorName = "";
-            // Do we have a color control code?
-            if (ControlCodes.IndexOf(part[0]) > -1)
-            { // Yes, we do - so we'll have to handle that...
-              colorName = GetJSONColorName(part[0]);
-              // Now that we've gotten the proper color name,
-              // we will have to remove the control code from the part string
-              part = part.Substring(1);
+            int pos = ControlCodes.IndexOf(part[0]);
+            if (pos > -1)
+            {
+              if (pos < 16)
+              {
+                element.Color = GetJSONColorName(part[0]);
+              }
+              else
+              {
+                switch (GetJSONFormatName(part[0]))
+                {
+                  case "obfuscated":
+                    
+                    if (element.Obfuscated)
+                    {
+                      element.Obfuscated = false;
+                    }
+                    else
+                    {
+                      element.Obfuscated = true;
+                    }
+
+                    // The same quick and easy way of toggling the bool variable:
+                    //element.Obfuscated = !element.Obfuscated;
+                    break;
+                  case "bold":
+
+                    // Toggle the setting
+                    element.Bold = !element.Bold;
+
+                    break;
+                  case "strikethrough":
+
+                    // Toggle the setting
+                    element.Strikethrough = !element.Strikethrough;
+
+                    break;
+                  case "underlined":
+
+                    // Toggle the setting
+                    element.Underlined = !element.Underlined;
+
+                    break;
+                  case "italic":
+
+                    // Toggle the setting
+                    element.Italic = !element.Italic;
+
+                    break;
+                  case "reset":
+                    element.Color = "none";
+                    element.Obfuscated = false;
+                    element.Bold = false;
+                    element.Strikethrough = false;
+                    element.Underlined = false;
+                    element.Italic = false;
+                    break;
+                }
+              }
+
+              // Remove/clear the control code character
+              if (part.Length == 1)
+              {
+                part = "";
+              }
+              else
+              {
+                part = part.Substring(1);
+              }
+
             }
             else
             {
               part = "§" + part;
             }
 
-            if (colorName.Length > 0)
-            {
-              result += "{";
-              // Add in the text part
-              result += "\"text\":\"" + part + "\",";
-              // and add the color reference
-              result += "\"color\":\"" + colorName + "\"";
-              result += "}";
-            }
-            else
-            {
-              result += "{";
-              // Add in the text part
-              result += "\"text\":\"" + part + "\"";
-              result += "}";
-            }
+            element.Text = part;
 
-            result += ",";
           }
-        }
 
-        // Remove the last comma from the result string
-        result = result.Substring(0, result.Length - 1);
+          if (element.Text.Length > 0)
+          {
+            Array.Resize(ref result, result.Length + 1);
+            result[result.Length - 1] = new ChatElement(element);
 
-        result += "]";
+            element.Text = "";
+          }
+
+        } // for
 
         return result;
       }
 
-      // Now returns a single json chat element containing the passed chat text.
-      return "[{\"text\":\"" + chatText + "\"}]";
+      if (chatText.Trim().Length > 0)
+      {
+        return new ChatElement[] { new ChatElement(chatText) };
+      }
+
+      return new ChatElement[0];
+    }
+
+    #endregion
+
+    #region Method: ToJSON
+
+    public static string ToJSON(string chatText)
+    {
+      ChatElement[] elements = ToElements(chatText);
+      string result = "";
+
+      if (elements.Length > 0)
+      {
+
+        // Chat settings set to default:
+        // color = none (game client renders as white)
+        // all text formatting flags are false, leaving plain text
+
+        ChatElement prevElement = new ChatElement("", "none");
+        string element = "";
+
+        for (int e = 0; e < elements.Length; e++)
+        {
+          element = "";
+          if (elements[e].Text.Length > 0)
+          {
+            element += "\"text\":\"" + elements[e].Text + "\",";
+            if (prevElement.Color != elements[e].Color)
+            {
+              element += "\"color\":\"" + elements[e].Color + "\",";
+              prevElement.Color = elements[e].Color;
+            }
+            if (prevElement.Obfuscated != elements[e].Obfuscated)
+            {
+              element += GetJSONFlag("obfuscated", elements[e].Obfuscated) + ",";
+              prevElement.Obfuscated = elements[e].Obfuscated;
+            }
+            if (prevElement.Bold != elements[e].Bold)
+            {
+              element += GetJSONFlag("bold", elements[e].Bold) + ",";
+              prevElement.Bold = elements[e].Bold;
+            }
+            if (prevElement.Strikethrough != elements[e].Strikethrough)
+            {
+              element += GetJSONFlag("strikethrough", elements[e].Strikethrough) + ",";
+              prevElement.Strikethrough = elements[e].Strikethrough;
+            }
+            if (prevElement.Underlined != elements[e].Underlined)
+            {
+              element += GetJSONFlag("underlined", elements[e].Underlined) + ",";
+              prevElement.Underlined = elements[e].Underlined;
+            }
+            if (prevElement.Italic != elements[e].Italic)
+            {
+              element += GetJSONFlag("italic", elements[e].Italic) + ",";
+              prevElement.Italic = elements[e].Italic;
+            }
+
+            // remove the trailing comma:
+            element = element.Substring(0, element.Length - 1);
+          }
+
+          if (element.Length > 0)
+          {
+            result += "{";
+            result += element;
+            result += "},";
+          }
+        }
+
+        // remove any trailing comma from the result var:
+        if (result.Length > 0)
+        {
+          result = result.Substring(0, result.Length - 1);
+        }
+
+        result = "[" + result + "]";
+      }
+
+      return result;
     }
 
     #endregion

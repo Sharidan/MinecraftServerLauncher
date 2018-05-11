@@ -48,6 +48,8 @@
     <Compile Include="CSharpLibs\ConfigTools\INIFile.cs" />
     <Compile Include="CSharpLibs\Minecraft\BackupManager.cs" />
     <Compile Include="CSharpLibs\Minecraft\ChatConverter.cs" />
+    <Compile Include="CSharpLibs\Minecraft\ChatElement.cs" />
+    <Compile Include="CSharpLibs\Minecraft\MinecraftFont.cs" />
     <Compile Include="CSharpLibs\Minecraft\PlayerProfile.cs" />
     <Compile Include="CSharpLibs\Minecraft\ScheduleManager.cs" />
     <Compile Include="CSharpLibs\Minecraft\ScheduleProfile.cs" />
@@ -145,6 +147,9 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="Resources\Icons\Stopping.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\FontGlyphs\FontGlyphsAscii.png" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

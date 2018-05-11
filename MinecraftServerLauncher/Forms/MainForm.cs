@@ -1062,7 +1062,7 @@ namespace MinecraftServerLauncher
 
     private void button1_Click(object sender, EventArgs e)
     {
-      string testMessage = "&7[&9Server&7] &eScheduled server restart in &c10&e minutes!";
+      string testMessage = "&7[&9&l&nServer&7] &eScheduled server restart in &c10&e minutes!";
 
       Debug.WriteLine("Test message: " + testMessage);
       Debug.WriteLine(ChatConverter.ToMOTD(testMessage));
@@ -1075,9 +1075,9 @@ namespace MinecraftServerLauncher
         {
           if (mvarServerHosts[index].AnnouncePrompt.Length == 0)
           {
-            mvarServerHosts[index].AnnouncePrompt = "&7[&9Server&7]";
+            mvarServerHosts[index].AnnouncePrompt = "&7[&9&l&nServer&7]";
           }
-          mvarServerHosts[index].Announce("&eScheduled server restart in &c10&e minutes!");
+          mvarServerHosts[index].Announce("&o&eScheduled server restart in &c10&e minutes!");
         }
       }
 
