@@ -45,6 +45,7 @@
       this.txtText.Name = "txtText";
       this.txtText.Size = new System.Drawing.Size(654, 24);
       this.txtText.TabIndex = 0;
+      this.txtText.TextChanged += new System.EventHandler(this.txtText_TextChanged);
       // 
       // btnAccept
       // 

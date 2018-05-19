@@ -1062,6 +1062,17 @@ namespace MinecraftServerLauncher
 
     private void button1_Click(object sender, EventArgs e)
     {
+
+      CustomTextDialog dialog = new CustomTextDialog();
+
+      //dialog.CustomText = "&7[&9&l&nServer&7] &eScheduled server restart in &c10&e minutes!";
+      dialog.CustomText = "[Server] Scheduled server restart in 10 minutes!";
+
+      dialog.ShowDialog(this);
+
+      dialog.Dispose();
+
+      /*
       string testMessage = "&7[&9&l&nServer&7] &eScheduled server restart in &c10&e minutes!";
 
       Debug.WriteLine("Test message: " + testMessage);
@@ -1080,8 +1091,10 @@ namespace MinecraftServerLauncher
           mvarServerHosts[index].Announce("&o&eScheduled server restart in &c10&e minutes!");
         }
       }
+      */
 
     }
+
   }
 }
 

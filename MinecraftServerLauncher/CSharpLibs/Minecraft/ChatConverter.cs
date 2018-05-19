@@ -144,27 +144,7 @@ namespace CSharpLibs.Minecraft
     /// <returns>Returns the chat element json color name for the passed control code.</returns>
     private static string GetJSONColorName(char controlCode)
     {
-      switch (controlCode)
-      {
-        case '0': return "black";
-        case '1': return "dark_blue";
-        case '2': return "dark_green";
-        case '3': return "dark_aqua";
-        case '4': return "dark_red";
-        case '5': return "dark_purple";
-        case '6': return "gold";
-        case '7': return "gray";
-        case '8': return "dark_gray";
-        case '9': return "blue";
-        case 'a': return "green";
-        case 'b': return "aqua";
-        case 'c': return "red";
-        case 'd': return "light_purple";
-        case 'e': return "yellow";
-        case 'f': return "white";
-      }
-
-      return "white";
+      return MinecraftColors.GetName(controlCode);
     }
 
     #endregion
@@ -363,7 +343,7 @@ namespace CSharpLibs.Minecraft
               }
 
             }
-            else
+            else if (p > 0)
             {
               part = "§" + part;
             }
@@ -378,6 +358,12 @@ namespace CSharpLibs.Minecraft
             result[result.Length - 1] = new ChatElement(element);
 
             element.Text = "";
+            element.Color = "none";
+            element.Obfuscated = false;
+            element.Bold = false;
+            element.Strikethrough = false;
+            element.Underlined = false;
+            element.Italic = false;
           }
 
         } // for

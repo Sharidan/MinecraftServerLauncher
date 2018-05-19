@@ -49,6 +49,7 @@
     <Compile Include="CSharpLibs\Minecraft\BackupManager.cs" />
     <Compile Include="CSharpLibs\Minecraft\ChatConverter.cs" />
     <Compile Include="CSharpLibs\Minecraft\ChatElement.cs" />
+    <Compile Include="CSharpLibs\Minecraft\MinecraftColors.cs" />
     <Compile Include="CSharpLibs\Minecraft\MinecraftFont.cs" />
     <Compile Include="CSharpLibs\Minecraft\PlayerProfile.cs" />
     <Compile Include="CSharpLibs\Minecraft\ScheduleManager.cs" />

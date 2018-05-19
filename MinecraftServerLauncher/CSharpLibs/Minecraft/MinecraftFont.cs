@@ -29,6 +29,69 @@ namespace CSharpLibs.Minecraft
 
     #region ===== Internal Helper Methods =====
 
+    #region Method: DrawGlyphPixel
+
+    private void DrawGlyphPixel(int x, int y, int lineWidth, ref byte[] pixelColor, ref byte[] imageBuffer)
+    {
+      int targetPosition = 0;
+
+      if (mvarZoom == 1)
+      {
+        // Draw the foreground glyph pixel...
+        targetPosition = (y * lineWidth) + (x * 4);
+        // Copy the forecolor pixel into the image buffer:
+        if (targetPosition < imageBuffer.Length - 4)
+        {
+          // This is to ensure that we are within the size of the image buffer
+          Array.Copy(pixelColor, 0, imageBuffer, targetPosition, pixelColor.Length);
+        }
+      }
+      else
+      {
+        for (int zy = 0; zy < mvarZoom; zy++)
+        {
+          for (int zx = 0; zx < mvarZoom; zx++)
+          {
+            targetPosition = (((y * mvarZoom) + zy)  * (lineWidth * mvarZoom)) + (((x * mvarZoom) + zx) * 4);
+
+            if (targetPosition < imageBuffer.Length - 4)
+            {
+              // This is to ensure that we are within the size of the image buffer
+              Array.Copy(pixelColor, 0, imageBuffer, targetPosition, pixelColor.Length);
+            }
+          }
+        }
+      }
+    }
+
+    #endregion
+
+    #region Method: GetColor
+
+    // Byte order of the pixel color channels:
+    // rasterImage[0] == blue
+    // rasterImage[1] == green
+    // rasterImage[2] == red
+    // rasterImage[3] == alpha
+
+    private byte[] GetColor(ChatElement element)
+    {
+      return GetColor(element, false);
+    }
+
+    private byte[] GetColor(ChatElement element, bool shadowColor)
+    {
+      if (shadowColor)
+      { // Shadow color
+        return MinecraftColors.GetColorBytes(element.Color, true);
+      }
+      
+      // Normal color
+      return MinecraftColors.GetColorBytes(element.Color);
+    }
+
+    #endregion
+
     #region Method: ScanGlyphWidth
 
     private void ScanGlyphWidth(int glyphIndex, ref Glyph glyph)
@@ -60,11 +123,30 @@ namespace CSharpLibs.Minecraft
 
     #region ===== Properties =====
 
-    public bool Shadows { get; set; } = false;
-
     public int LetterSpacing { get; set; } = 1;
 
     public int LineHeight { get; set; } = 9;
+
+    public bool Shadows { get; set; } = false;
+
+
+    #region Property: Zoom
+
+    private int mvarZoom = 1;
+
+    public int Zoom
+    {
+      get { return mvarZoom; }
+      set
+      {
+        if (value >= 1 && value <= 4)
+        {
+          mvarZoom = value;
+        }
+      }
+    }
+
+    #endregion
 
     #endregion
 
@@ -87,19 +169,207 @@ namespace CSharpLibs.Minecraft
 
     public Bitmap DrawString(string chatText)
     {
+      // Convert the chat text into individual chat elements
       ChatElement[] chatElements = ChatConverter.ToElements(chatText);
+      // Calculate the size in pixels required to render this text
       Size surfaceSize = MeasureString(ref chatElements);
+      // Create an image buffer we can draw into
+      byte[] rasterImage = new byte[((surfaceSize.Width * mvarZoom) * (surfaceSize.Height * mvarZoom)) * 4];
+      // Pixel color buffers:
+      byte[] ForeColor = new byte[0];
+      byte[] ShadowColor = new byte[0];
+      int drawX = 0; // Current draw X position
+      int drawY = 0; // Current draw Y position
+      int pixelLineWidth = surfaceSize.Width * 4;
+      int strikethroughY = (surfaceSize.Height / 2) - 1;
 
+      // Loop through all the chat elements....
+      for (int e = 0; e < chatElements.Length; e++)
+      {
+        // Fetch the forecolor for this chat element
+        ForeColor = GetColor(chatElements[e]);
+        // Do we also need the shadow color?
+        if (Shadows)
+        {
+          // Fetch the shadow color for this element
+          ShadowColor = GetColor(chatElements[e], true);
+        }
 
+        // Convert the default UTF16 string into ASCII
+        byte[] asciiText = Encoding.ASCII.GetBytes(chatElements[e].Text);
 
+        // Loop through each ascii character reference
+        for (int a = 0; a < asciiText.Length; a++)
+        {
+          int glyphIndex = asciiText[a];
 
+          // Loop through the glyph, drawing only solid pixels....
+          for (int gy = 0; gy < GlyphHeight; gy++)
+          {
 
-      return null;
+            //INFO:
+            // gx = glyph x
+            // gy = glyph y
+
+            for (int gx = 0; gx < Glyphs[glyphIndex].Width; gx++)
+            {
+              byte bit = Glyphs[glyphIndex].Bits[(gy * GlyphWidth) + gx];
+
+              // for the sake of readability:
+              int pixelX = drawX + gx;
+              int pixelY = drawY + gy;
+
+              if (bit > 0)
+              {
+
+                // Draw the shadow here ...
+                if (Shadows)
+                {
+                  DrawGlyphPixel(pixelX + 1, pixelY + 1, pixelLineWidth, ref ShadowColor, ref rasterImage);
+
+                  if (chatElements[e].Bold)
+                  {
+                    DrawGlyphPixel(pixelX + 2, pixelY + 1, pixelLineWidth, ref ShadowColor, ref rasterImage);
+                  }
+
+                  if (gy == GlyphHeight - 1)
+                  {
+                    // Process Strikethrough & Underline
+                    if (chatElements[e].Strikethrough)
+                    {
+                      DrawGlyphPixel(pixelX + 1, strikethroughY + 1, pixelLineWidth, ref ShadowColor, ref rasterImage);
+
+                      if (chatElements[e].Bold)
+                      {
+                        DrawGlyphPixel(pixelX + 2, strikethroughY + 1, pixelLineWidth, ref ShadowColor, ref rasterImage);
+                      }
+                    }
+                    if (chatElements[e].Underlined)
+                    {
+                      DrawGlyphPixel(pixelX + 1, (GlyphHeight + 1), pixelLineWidth, ref ShadowColor, ref rasterImage);
+
+                      if (chatElements[e].Bold)
+                      {
+                        DrawGlyphPixel(pixelX + 2, (GlyphHeight + 1), pixelLineWidth, ref ShadowColor, ref rasterImage);
+                      }
+                    }
+                  }
+
+                }
+
+                // ---------------------------------------------------------
+
+                DrawGlyphPixel(pixelX, pixelY, pixelLineWidth, ref ForeColor, ref rasterImage);
+
+                if (chatElements[e].Bold)
+                {
+                  DrawGlyphPixel(pixelX + 1, pixelY, pixelLineWidth, ref ForeColor, ref rasterImage);
+                }
+              }
+
+              if (gy == GlyphHeight - 1)
+              {
+                // Process Strikethrough & Underline
+                if (chatElements[e].Strikethrough)
+                {
+                  DrawGlyphPixel(pixelX, strikethroughY, pixelLineWidth, ref ForeColor, ref rasterImage);
+
+                  if (chatElements[e].Bold)
+                  {
+                    DrawGlyphPixel(pixelX + 1, strikethroughY, pixelLineWidth, ref ForeColor, ref rasterImage);
+                  }
+                }
+                if (chatElements[e].Underlined)
+                {
+                  DrawGlyphPixel(pixelX, GlyphHeight, pixelLineWidth, ref ForeColor, ref rasterImage);
+
+                  if (chatElements[e].Bold)
+                  {
+                    DrawGlyphPixel(pixelX + 1, GlyphHeight, pixelLineWidth, ref ForeColor, ref rasterImage);
+                  }
+                }
+              }
+
+            }
+
+          } // for gy
+
+          // Increment the drawX by the glyph width
+          drawX += Glyphs[glyphIndex].Width;
+          // Is this chat element in bold?
+          if (chatElements[e].Bold)
+          { // Yup, so add one pixel offset
+            drawX++;
+          }
+
+          for (int l = 0; l < LetterSpacing; l++)
+          {
+            // Shadow?
+            if (Shadows)
+            {
+              // Process Strikethrough & Underline
+              if (chatElements[e].Strikethrough)
+              {
+                DrawGlyphPixel((drawX + l) + 1, strikethroughY + 1, pixelLineWidth, ref ShadowColor, ref rasterImage);
+
+                if (chatElements[e].Bold)
+                {
+                  DrawGlyphPixel((drawX + l) + 2, strikethroughY + 1, pixelLineWidth, ref ShadowColor, ref rasterImage);
+                }
+              }
+              if (chatElements[e].Underlined)
+              {
+                DrawGlyphPixel((drawX + l) + 1, (GlyphHeight + 1), pixelLineWidth, ref ShadowColor, ref rasterImage);
+
+                if (chatElements[e].Bold)
+                {
+                  DrawGlyphPixel((drawX + l) + 2, (GlyphHeight + 1), pixelLineWidth, ref ShadowColor, ref rasterImage);
+                }
+              }
+            }
+
+            // Normal
+
+            // Process Strikethrough & Underline
+            if (chatElements[e].Strikethrough)
+            {
+              DrawGlyphPixel((drawX + l), strikethroughY, pixelLineWidth, ref ForeColor, ref rasterImage);
+
+              if (chatElements[e].Bold)
+              {
+                DrawGlyphPixel((drawX + l) + 1, strikethroughY, pixelLineWidth, ref ForeColor, ref rasterImage);
+              }
+            }
+            if (chatElements[e].Underlined)
+            {
+              DrawGlyphPixel((drawX + l), GlyphHeight, pixelLineWidth, ref ForeColor, ref rasterImage);
+
+              if (chatElements[e].Bold)
+              {
+                DrawGlyphPixel((drawX + l) + 1, GlyphHeight, pixelLineWidth, ref ForeColor, ref rasterImage);
+              }
+            }
+
+            // Increment the drawX by each pixel of letterspacing
+            drawX++;
+          }
+        }
+      }
+
+      Bitmap result = new Bitmap(surfaceSize.Width * mvarZoom, surfaceSize.Height * mvarZoom, PixelFormat.Format32bppArgb);
+      BitmapData data = result.LockBits(new Rectangle(0, 0, surfaceSize.Width * mvarZoom, surfaceSize.Height * mvarZoom), ImageLockMode.WriteOnly, result.PixelFormat);
+      Marshal.Copy(rasterImage, 0, data.Scan0, rasterImage.Length);
+      result.UnlockBits(data);
+      data = null;
+
+      rasterImage = new byte[0];
+
+      return result;
     }
 
     public void DrawString(string chatText, Graphics g, Point point)
     {
-
+      g.DrawImage(DrawString(chatText), point);
     }
 
     #endregion
@@ -127,9 +397,12 @@ namespace CSharpLibs.Minecraft
           boldExtra = 1; // One extra pixel per rendered character/glyph
         }
 
-        for (int t = 0; t < elements[e].Text.Length; t++)
+        //TODO: Add in a reference to a better ASCII conversion for the text!!!
+        byte[] asciiText = Encoding.ASCII.GetBytes(elements[e].Text);
+        // This ^ wont correctly convert into full ascii, so we'll have to create a custom converter
+        for (int t = 0; t < asciiText.Length; t++)
         {
-          byte charIndex = (byte)elements[e].Text[t];
+          byte charIndex = asciiText[t];
 
           result += Glyphs[charIndex].Width + boldExtra + LetterSpacing;
         }
