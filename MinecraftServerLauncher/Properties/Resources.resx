@@ -118,8 +118,26 @@
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
   <assembly alias="System.Windows.Forms" name="System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" />
+  <data name="Archiving" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\Icons\Archiving.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="CharacterBold" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\Icons\CharacterBold.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="CharacterItalic" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\Icons\CharacterItalic.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="CharacterStrikethrough" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\Icons\CharacterStrikethrough.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="CharacterUnderlined" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\Icons\CharacterUnderlined.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
   <data name="FontGlyphsAscii" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>..\Resources\FontGlyphs\FontGlyphsAscii.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="Restarting" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\Icons\Restarting.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
   </data>
   <data name="Running" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>..\Resources\Icons\Running.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>

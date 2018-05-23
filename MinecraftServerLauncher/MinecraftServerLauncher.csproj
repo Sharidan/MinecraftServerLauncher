@@ -152,5 +152,23 @@
   <ItemGroup>
     <None Include="Resources\FontGlyphs\FontGlyphsAscii.png" />
   </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\Icons\CharacterBold.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\Icons\CharacterItalic.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\Icons\CharacterStrikethrough.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\Icons\CharacterUnderlined.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\Icons\Archiving.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\Icons\Restarting.png" />
+  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

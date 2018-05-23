@@ -315,7 +315,7 @@ namespace CSharpLibs.Minecraft
         case "dark_red": return 4;
         case "dark_purple": return 5;
         case "gold": return 6;
-        case "graygray": return 7;
+        case "gray": return 7;
         case "dark_gray": return 8;
         case "blue": return 9;
         case "green": return 10;

@@ -1060,41 +1060,6 @@ namespace MinecraftServerLauncher
 
     #endregion
 
-    private void button1_Click(object sender, EventArgs e)
-    {
-
-      CustomTextDialog dialog = new CustomTextDialog();
-
-      //dialog.CustomText = "&7[&9&l&nServer&7] &eScheduled server restart in &c10&e minutes!";
-      dialog.CustomText = "[Server] Scheduled server restart in 10 minutes!";
-
-      dialog.ShowDialog(this);
-
-      dialog.Dispose();
-
-      /*
-      string testMessage = "&7[&9&l&nServer&7] &eScheduled server restart in &c10&e minutes!";
-
-      Debug.WriteLine("Test message: " + testMessage);
-      Debug.WriteLine(ChatConverter.ToMOTD(testMessage));
-      Debug.WriteLine(ChatConverter.ToJSON(testMessage));
-
-      if (profileSelectionIndex > -1)
-      {
-        int index = GetServerHostIndex(Config.Profiles[profileSelectionIndex].ID);
-        if (index > -1)
-        {
-          if (mvarServerHosts[index].AnnouncePrompt.Length == 0)
-          {
-            mvarServerHosts[index].AnnouncePrompt = "&7[&9&l&nServer&7]";
-          }
-          mvarServerHosts[index].Announce("&o&eScheduled server restart in &c10&e minutes!");
-        }
-      }
-      */
-
-    }
-
   }
 }
 
