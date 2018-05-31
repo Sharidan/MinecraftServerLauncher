@@ -645,7 +645,19 @@ namespace MinecraftServerLauncher
           }
           else
           {
-            ServerProfileConfigDialog dialog = new ServerProfileConfigDialog();
+            //ServerProfileConfigDialog dialog = new ServerProfileConfigDialog();
+            //dialog.Profile = Config.Profiles[profileSelectionIndex];
+
+            //if (dialog.ShowDialog(this) == DialogResult.OK)
+            //{
+            //  Config.Profiles[profileSelectionIndex] = dialog.Profile;
+            //  Config.Save();
+            //  CheckServerProfiles();
+            //}
+
+            //dialog.Dispose();
+
+            ConfigDialog dialog = new ConfigDialog();
             dialog.Profile = Config.Profiles[profileSelectionIndex];
 
             if (dialog.ShowDialog(this) == DialogResult.OK)
@@ -1060,6 +1072,16 @@ namespace MinecraftServerLauncher
 
     #endregion
 
+    private void button1_Click(object sender, EventArgs e)
+    {
+      CustomTextDialog dialog = new CustomTextDialog();
+
+      dialog.CustomText = "Blah something greeeeeen blue and whatnot";
+
+      dialog.ShowDialog(this);
+
+      dialog.Dispose();
+    }
   }
 }
 

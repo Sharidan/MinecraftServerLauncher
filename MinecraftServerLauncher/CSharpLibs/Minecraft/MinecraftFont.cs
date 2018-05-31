@@ -1,4 +1,5 @@
-﻿using System;
+﻿using CSharpLibs.Encoders;
+using System;
 using System.Collections.Generic;
 using System.Drawing;
 using System.Drawing.Imaging;
@@ -195,8 +196,8 @@ namespace CSharpLibs.Minecraft
           ShadowColor = GetColor(chatElements[e], true);
         }
 
-        // Convert the default UTF16 string into ASCII
-        byte[] asciiText = Encoding.ASCII.GetBytes(chatElements[e].Text);
+        // Convert the default UTF16 string into ASCII using our custom encoder
+        byte[] asciiText = ASCIIEncoder.GetBytes(chatElements[e].Text);
 
         // Loop through each ascii character reference
         for (int a = 0; a < asciiText.Length; a++)
@@ -397,9 +398,8 @@ namespace CSharpLibs.Minecraft
           boldExtra = 1; // One extra pixel per rendered character/glyph
         }
 
-        //TODO: Add in a reference to a better ASCII conversion for the text!!!
-        byte[] asciiText = Encoding.ASCII.GetBytes(elements[e].Text);
-        // This ^ wont correctly convert into full ascii, so we'll have to create a custom converter
+        // Using our custom ASCII encoder to handle conversion
+        byte[] asciiText = ASCIIEncoder.GetBytes(elements[e].Text);
         for (int t = 0; t < asciiText.Length; t++)
         {
           byte charIndex = asciiText[t];

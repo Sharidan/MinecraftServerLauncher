@@ -45,6 +45,13 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="CSharpLibs\Encoders\ASCIIEncoder.cs" />
+    <Compile Include="Forms\Dialogs\ConfigDialog.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Forms\Dialogs\ConfigDialog.Designer.cs">
+      <DependentUpon>ConfigDialog.cs</DependentUpon>
+    </Compile>
     <Compile Include="CSharpLibs\ConfigTools\INIFile.cs" />
     <Compile Include="CSharpLibs\Minecraft\BackupManager.cs" />
     <Compile Include="CSharpLibs\Minecraft\ChatConverter.cs" />
@@ -96,6 +103,15 @@
     <Compile Include="UserControls\FlatButton\FlatButton.Designer.cs">
       <DependentUpon>FlatButton.cs</DependentUpon>
     </Compile>
+    <Compile Include="UserControls\MinecraftTextView\MinecraftTextView.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="UserControls\MinecraftTextView\MinecraftTextView.Designer.cs">
+      <DependentUpon>MinecraftTextView.cs</DependentUpon>
+    </Compile>
+    <EmbeddedResource Include="Forms\Dialogs\ConfigDialog.resx">
+      <DependentUpon>ConfigDialog.cs</DependentUpon>
+    </EmbeddedResource>
     <EmbeddedResource Include="Forms\Dialogs\CustomTextDialog.resx">
       <DependentUpon>CustomTextDialog.cs</DependentUpon>
     </EmbeddedResource>
@@ -123,6 +139,9 @@
     </EmbeddedResource>
     <EmbeddedResource Include="UserControls\FlatButton\FlatButton.resx">
       <DependentUpon>FlatButton.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="UserControls\MinecraftTextView\MinecraftTextView.resx">
+      <DependentUpon>MinecraftTextView.cs</DependentUpon>
     </EmbeddedResource>
     <None Include="Properties\Settings.settings">
       <Generator>SettingsSingleFileGenerator</Generator>

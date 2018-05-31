@@ -28,6 +28,7 @@
     /// </summary>
     private void InitializeComponent()
     {
+      this.button1 = new System.Windows.Forms.Button();
       this.btnSchedule = new MinecraftServerLauncher.UserControls.FlatButton.FlatButton();
       this.btnStop = new MinecraftServerLauncher.UserControls.FlatButton.FlatButton();
       this.btnStart = new MinecraftServerLauncher.UserControls.FlatButton.FlatButton();
@@ -35,6 +36,16 @@
       this.btnEdit = new MinecraftServerLauncher.UserControls.FlatButton.FlatButton();
       this.btnAdd = new MinecraftServerLauncher.UserControls.FlatButton.FlatButton();
       this.SuspendLayout();
+      // 
+      // button1
+      // 
+      this.button1.Location = new System.Drawing.Point(12, 389);
+      this.button1.Name = "button1";
+      this.button1.Size = new System.Drawing.Size(75, 23);
+      this.button1.TabIndex = 6;
+      this.button1.Text = "button1";
+      this.button1.UseVisualStyleBackColor = true;
+      this.button1.Click += new System.EventHandler(this.button1_Click);
       // 
       // btnSchedule
       // 
@@ -120,6 +131,7 @@
       this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
       this.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(64)))), ((int)(((byte)(64)))), ((int)(((byte)(64)))));
       this.ClientSize = new System.Drawing.Size(713, 424);
+      this.Controls.Add(this.button1);
       this.Controls.Add(this.btnSchedule);
       this.Controls.Add(this.btnStop);
       this.Controls.Add(this.btnStart);
@@ -143,6 +155,7 @@
     private UserControls.FlatButton.FlatButton btnStart;
     private UserControls.FlatButton.FlatButton btnStop;
     private UserControls.FlatButton.FlatButton btnSchedule;
+    private System.Windows.Forms.Button button1;
   }
 }
 
